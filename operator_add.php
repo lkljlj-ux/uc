@@ -17,6 +17,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aadhar_no'])){
 
     if($operator_name === '' || $aadhar_no === '' || $token_no === '' || $start_time === ''){
         $error = 'Operator Name, Aadhar No., Token No. aur Start Time zaroori hain.';
+    } elseif(strlen($token_no) > 6){
+        $error = 'Token No. 6 digit se zyada nahi hona chahiye.';
     } else {
         $insert = "INSERT INTO test 
             (user_id, user_token, user_b, user_s, user_s2, stationType, startTime, expiryTime, registrationSequenceNumber, status, macid)
@@ -74,7 +76,7 @@ $result = mysqli_query($link, "SELECT * FROM test ORDER BY id DESC");
                                     <div class="form-row">
                                         <div class="form-group col-md-6">
                                             <label><b>Token No.</b></label>
-                                            <input type="text" name="token_no" class="form-control" placeholder="Token number" required>
+                                            <input type="text" name="token_no" class="form-control" placeholder="Max 6 digit" maxlength="6" required>
                                         </div>
                                         <div class="form-group col-md-6">
                                             <label><b>Start Time</b></label>
