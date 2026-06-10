@@ -144,18 +144,11 @@ setInterval(loadData, 5000);
         <table class="status-table">
             <thead>
                 <tr class="group">
-                    <th colspan="6">SYSTEM NAME DATA (TABLE-1)</th>
-                    <th colspan="4">MAP DATA (TABLE-2)</th>
+                    <th colspan="4">Live Matched MAC Report</th>
                 </tr>
                 <tr class="header">
-                    <th>ID</th>
                     <th>User ID</th>
-                    <th>User Name</th>
                     <th>Count</th>
-                    <th>Date</th>
-                    <th>MAC ID</th>
-                    <th>Map ID</th>
-                    <th>Name</th>
                     <th>MAC ID</th>
                     <th>Status</th>
                 </tr>
