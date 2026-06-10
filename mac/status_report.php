@@ -33,7 +33,7 @@ $dataSql = "
     ORDER BY s.system_date DESC
 ";
 $data = $conn->query($dataSql);
-echo "<div id='table-data'>";
+echo "<table id='table-data' style='display:none'><tbody>";
 if ($data && $data->num_rows > 0) {
     while ($row = $data->fetch_assoc()) {
         $statusClass = ($row['status'] === 'ACTIVE') ? 'status-active' : 'status-inactive';
@@ -49,5 +49,5 @@ if ($data && $data->num_rows > 0) {
 } else {
     echo "<tr><td colspan='5' style='text-align:center;'>No Data Found</td></tr>";
 }
-echo "</div>";
+echo "</tbody></table>";
 $conn->close();

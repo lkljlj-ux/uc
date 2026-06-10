@@ -94,7 +94,7 @@ function loadData() {
             if (cards) document.getElementById("summaryArea").innerHTML = cards.outerHTML;
 
             // Table rows
-            const tableData = temp.querySelector("#table-data");
+            const tableData = temp.querySelector("#table-data tbody");
             if (tableData) {
                 if (dtTable) {
                     dtTable.destroy();
