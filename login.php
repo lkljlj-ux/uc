@@ -28,57 +28,267 @@ if(isset($_POST['login'])){
 }
 ?>
 <!doctype html>
-<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang=""> <![endif]-->
-<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8" lang=""> <![endif]-->
-<!--[if IE 8]>         <html class="no-js lt-ie9" lang=""> <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang=""> <!--<![endif]-->
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>test -admin</title>
-    <meta name="description" content="anish">
+    <title>Admin Login</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.0/normalize.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lykmapipo/themify-icons@0.1.2/css/themify-icons.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pixeden-stroke-7-icon@1.2.3/pe-icon-7-stroke/dist/pe-icon-7-stroke.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.2.0/css/flag-icon.min.css">
-    <link rel="stylesheet" href="assets/css/cs-skin-elastic.css">
-    <link rel="stylesheet" href="assets/css/style.css">
-    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,600,700,800' rel='stylesheet' type='text/css'>
-</head>
-<body class="bg-dark">
+    <link href='https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700' rel='stylesheet'>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    <div class="sufee-login d-flex align-content-center flex-wrap">
-        <div class="container">
-            <div class="login-content">
-                <div class="login-form">
-                    <div class="login-logo"></div><br>
-                    <?php if(isset($_GET['msg']) && $_GET['msg']=='wrong_password'): ?>
-                        <div class="alert alert-danger text-center">Email ya Password galat hai!</div>
-                    <?php endif; ?>
-                    <form action="" method="post">
-                        <div class="form-group">
-                            <label><b>Email address / Username</b></label>
-                            <input type="text" name="email" class="form-control" placeholder="Email ya Username">
-                        </div>
-                        <div class="form-group">
-                            <label><b>Password</b></label>
-                            <input type="password" name="password" class="form-control" placeholder="Password">
-                        </div>
-                        <button type="submit" name="login" value="login" class="btn btn-success btn-flat m-b-30 m-t-30">Sign in</button>
-                    </form>
+        body {
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Animated background circles */
+        body::before, body::after {
+            content: '';
+            position: fixed;
+            border-radius: 50%;
+            opacity: 0.07;
+            animation: float 8s ease-in-out infinite;
+        }
+        body::before {
+            width: 500px; height: 500px;
+            background: #e94560;
+            top: -150px; right: -100px;
+        }
+        body::after {
+            width: 400px; height: 400px;
+            background: #0f3460;
+            bottom: -120px; left: -80px;
+            animation-delay: -4s;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50%       { transform: translateY(-30px) scale(1.05); }
+        }
+
+        .login-wrapper {
+            width: 100%;
+            max-width: 440px;
+            padding: 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .login-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 48px 40px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .login-logo .logo-icon {
+            width: 72px; height: 72px;
+            background: linear-gradient(135deg, #e94560, #c0392b);
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 24px rgba(233,69,96,0.4);
+        }
+        .login-logo .logo-icon i {
+            font-size: 32px;
+            color: #fff;
+        }
+        .login-logo h2 {
+            color: #fff;
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .login-logo p {
+            color: rgba(255,255,255,0.45);
+            font-size: 13px;
+            font-weight: 300;
+        }
+
+        .alert-danger {
+            background: rgba(233,69,96,0.15);
+            border: 1px solid rgba(233,69,96,0.4);
+            color: #ff6b81;
+            border-radius: 12px;
+            font-size: 13px;
+            padding: 10px 14px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .form-group { margin-bottom: 20px; }
+
+        .form-group label {
+            color: rgba(255,255,255,0.65);
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+        .input-wrapper i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,0.35);
+            font-size: 15px;
+            z-index: 2;
+        }
+        .input-wrapper input {
+            width: 100%;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
+            padding: 13px 16px 13px 44px;
+            color: #fff;
+            font-size: 14px;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+        .input-wrapper input::placeholder { color: rgba(255,255,255,0.25); }
+        .input-wrapper input:focus {
+            border-color: #e94560;
+            background: rgba(255,255,255,0.1);
+            box-shadow: 0 0 0 3px rgba(233,69,96,0.15);
+        }
+
+        .toggle-pass {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,0.3);
+            cursor: pointer;
+            font-size: 14px;
+            background: none;
+            border: none;
+            padding: 0;
+            z-index: 2;
+            transition: color 0.2s;
+        }
+        .toggle-pass:hover { color: rgba(255,255,255,0.7); }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #e94560, #c0392b);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(233,69,96,0.4);
+            letter-spacing: 0.5px;
+            margin-top: 8px;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 28px rgba(233,69,96,0.5);
+        }
+        .btn-login:active { transform: translateY(0); }
+        .btn-login i { margin-right: 8px; }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 28px;
+            color: rgba(255,255,255,0.25);
+            font-size: 12px;
+        }
+        .login-footer span { color: #e94560; }
+    </style>
+</head>
+<body>
+
+<div class="login-wrapper">
+    <div class="login-card">
+
+        <!-- Logo -->
+        <div class="login-logo">
+            <div class="logo-icon">
+                <i class="fa fa-fingerprint" style="font-size:28px;">&#x1F4F8;</i>
+                <i class="fa fa-shield"></i>
+            </div>
+            <h2>Admin Panel</h2>
+            <p>Aadhaar Station Management System</p>
+        </div>
+
+        <!-- Error -->
+        <?php if(isset($_GET['msg']) && $_GET['msg']=='wrong_password'): ?>
+            <div class="alert-danger">
+                <i class="fa fa-exclamation-circle"></i> Username ya Password galat hai!
+            </div>
+        <?php endif; ?>
+
+        <!-- Form -->
+        <form action="" method="POST" autocomplete="off">
+            <div class="form-group">
+                <label>Username / Email</label>
+                <div class="input-wrapper">
+                    <i class="fa fa-user"></i>
+                    <input type="text" name="email" placeholder="admin ya email daalo" required>
                 </div>
             </div>
+            <div class="form-group">
+                <label>Password</label>
+                <div class="input-wrapper">
+                    <i class="fa fa-lock"></i>
+                    <input type="password" name="password" id="passField" placeholder="Password daalo" required>
+                    <button type="button" class="toggle-pass" onclick="togglePass()">
+                        <i class="fa fa-eye" id="eyeIcon"></i>
+                    </button>
+                </div>
+            </div>
+            <button type="submit" name="login" class="btn-login">
+                <i class="fa fa-sign-in"></i> Sign In
+            </button>
+        </form>
+
+        <div class="login-footer">
+            Powered by <span>OnlineSolution.cloud</span>
         </div>
+
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/jquery@2.2.4/dist/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.4/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/js/bootstrap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jquery-match-height@0.7.2/dist/jquery.matchHeight.min.js"></script>
-    <script src="assets/js/main.js"></script>
-
+<script>
+function togglePass() {
+    var f = document.getElementById('passField');
+    var i = document.getElementById('eyeIcon');
+    if(f.type === 'password'){
+        f.type = 'text';
+        i.className = 'fa fa-eye-slash';
+    } else {
+        f.type = 'password';
+        i.className = 'fa fa-eye';
+    }
+}
+</script>
 </body>
 </html>
