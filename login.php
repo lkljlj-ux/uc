@@ -15,11 +15,11 @@ if(isset($_POST['login'])){
      $user_pass="Happynewyear1520@0"; 
      
      if($email==$user_name && $user_pass==$password){
-		 $_SESSION['user_token']=$user_name;
-		 $_SESSION['user_type']="admin";    
+                 $_SESSION['user_token']=$user_name;
+                 $_SESSION['user_type']="admin";    
          header("location:dashboard.php"); 
      } else {
-         header("location:loginmm.php?&msg=wrong_password");
+         header("location:login.php?msg=wrong_password");
      }
 
  }
@@ -51,8 +51,11 @@ if(isset($_POST['login'])){
         <div class="container">
             <div class="login-content">
                 <div class="login-form">
-				    <div class="login-logo">
-					</div><br>
+                                    <div class="login-logo">
+                                        </div><br>
+                    <?php if(isset($_GET['msg']) && $_GET['msg']=='wrong_password'): ?>
+                        <div class="alert alert-danger text-center">Email ya Password galat hai!</div>
+                    <?php endif; ?>
                     <form action="" method="post">
                         <div class="form-group">
                             <label><b>Email address</b></label>
