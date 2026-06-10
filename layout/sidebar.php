@@ -47,6 +47,9 @@
                                                 <li class=" <?php if($pages=='status'){ echo 'active';} ?>">
                                                         <a href="mac/status.php"><i class="menu-icon fa fa-trash"></i> All Report</a>
                                                 </li>
+                                                <li class=" <?php if($page=='change_password.php'){ echo 'active';} ?>">
+                                                        <a href="change_password.php"><i class="menu-icon fa fa-key"></i> Change Password</a>
+                                                </li>
                                                 <li class="">
                                                         <a href="logout.php"><i class="menu-icon fa fa-sign-out"></i> Logout</a>
                                                 </li>
