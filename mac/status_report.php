@@ -10,7 +10,7 @@ $summarySql = "
     INNER JOIN map m ON TRIM(UPPER(s.macId)) = TRIM(UPPER(m.macid))
     GROUP BY s.system_date
     ORDER BY s.system_date DESC
-    LIMIT 15
+    LIMIT 7
 ";
 $summary = $conn->query($summarySql);
 if ($summary && $summary->num_rows > 0) {
