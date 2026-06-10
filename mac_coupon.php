@@ -20,12 +20,16 @@ while($cr = mysqli_fetch_assoc($coupon_rows)){
     $today_count = (int)mysqli_fetch_assoc($cnt_res)['c'];
 
     if($today_count >= $limit && $limit > 0){
-        // Coupon khatam → INACTIVE karo aur flag set karo
-        mysqli_query($link, "UPDATE map SET status='INACTIVE' WHERE macid='$mac'");
+        // Coupon khatam → sirf tabhi INACTIVE karo agar abhi ACTIVE hai
+        mysqli_query($link, "UPDATE map SET status='INACTIVE' WHERE macid='$mac' AND status='ACTIVE'");
         mysqli_query($link, "UPDATE mac_coupons SET deactivated_by_coupon=1 WHERE macid='$mac'");
     } elseif($today_count < $limit && $cr['deactivated_by_coupon'] == 1){
-        // Naya din / count kam hai → wapas ACTIVE karo
-        mysqli_query($link, "UPDATE map SET status='ACTIVE' WHERE macid='$mac'");
+        // Naya din / count kam hai — sirf tabhi ACTIVE karo jab coupon ne hi inactive kiya tha
+        // Check karo: map.status='INACTIVE' aur deactivated_by_coupon=1 — tabhi reset karo
+        $map_check = mysqli_fetch_assoc(mysqli_query($link, "SELECT status FROM map WHERE macid='$mac'"));
+        if($map_check && $map_check['status'] === 'INACTIVE'){
+            mysqli_query($link, "UPDATE map SET status='ACTIVE' WHERE macid='$mac'");
+        }
         mysqli_query($link, "UPDATE mac_coupons SET deactivated_by_coupon=0 WHERE macid='$mac'");
     }
 }
@@ -56,9 +60,13 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_coupon'])){
 // Delete coupon config
 if(isset($_GET['remove'])){
     $rmac = mysqli_real_escape_string($link, $_GET['remove']);
+    // Sirf tabhi ACTIVE karo agar coupon ne deactivate kiya tha (deactivated_by_coupon=1)
+    // Manually inactive machines ko touch mat karo
+    $flag_res = mysqli_fetch_assoc(mysqli_query($link, "SELECT deactivated_by_coupon FROM mac_coupons WHERE macid='$rmac'"));
+    if($flag_res && $flag_res['deactivated_by_coupon'] == 1){
+        mysqli_query($link, "UPDATE map SET status='ACTIVE' WHERE macid='$rmac'");
+    }
     mysqli_query($link, "DELETE FROM mac_coupons WHERE macid='$rmac'");
-    // Reset map status to active if it was deactivated by coupon
-    mysqli_query($link, "UPDATE map SET status='ACTIVE' WHERE macid='$rmac'");
     header("location:mac_coupon.php");
     exit();
 }
