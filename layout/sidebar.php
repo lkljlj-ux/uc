@@ -35,6 +35,12 @@
                                                 <li class=" <?php if($page=='operator_xml_upload.php'){ echo 'active';} ?>">
                                                         <a href="operator_xml_upload.php"><i class="menu-icon fa fa-file-code-o"></i> XML Upload</a>
                                                 </li>
+                                                <li class=" <?php if($page=='distributor.php'){ echo 'active';} ?>">
+                                                        <a href="distributor.php"><i class="menu-icon fa fa-truck"></i> Distributor</a>
+                                                </li>
+                                                <li class=" <?php if($page=='retailer.php'){ echo 'active';} ?>">
+                                                        <a href="retailer.php"><i class="menu-icon fa fa-shopping-cart"></i> Retailer</a>
+                                                </li>
                                                 <li class=" <?php if($pages=='test2'){ echo 'active';} ?>">
                                                         <a href="map.php"><i class="menu-icon fa fa-plus"></i> Map machine</a>
                                                 </li>
