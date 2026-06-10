@@ -11,7 +11,14 @@ include(__DIR__.'/../database.php');
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <base href="/">
+    <?php
+    $projectRoot = str_replace('\\', '/', dirname(__DIR__));
+    $docRoot     = str_replace('\\', '/', rtrim($_SERVER['DOCUMENT_ROOT'], '/'));
+    $basePath    = str_replace($docRoot, '', $projectRoot);
+    $basePath    = rtrim($basePath, '/') . '/';
+    if($basePath === '//' || $basePath === '') $basePath = '/';
+    ?>
+    <base href="<?= htmlspecialchars($basePath) ?>">
     <title>Admin</title>
     <meta name="description" content="Admin">
     <meta name="viewport" content="width=device-width, initial-scale=1">
