@@ -30,6 +30,7 @@ $dataSql = "
     SELECT s.user_id, s.user_count, s.macId, m.status, s.system_date
     FROM system_name_data s
     INNER JOIN map m ON TRIM(UPPER(s.macId)) = TRIM(UPPER(m.macid))
+    WHERE s.system_date >= CURDATE() - INTERVAL 7 DAY
     ORDER BY s.system_date DESC
 ";
 $data = $conn->query($dataSql);
