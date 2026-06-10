@@ -1,37 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>MAC Match Live Status</title>
-<!-- nirmal singh self code -->
+<?php
+include('../layout/header.php');
+if(!isset($_SESSION['user_token'])){
+    header("location:/login.php");
+    exit();
+}
+?>
+        <!-- Content -->
+        <div class="content" style="min-height: 610px;">
+            <div class="animated fadeIn">
 
 <style>
-body {
-    margin: 0;
-    background: #f1f5f9;
-    font-family: "Segoe UI", Arial, sans-serif;
-    color: #1f2937;
-}
-
-.wrapper {
-    max-width: 1600px;
-    margin: 20px auto;
+.status-wrapper {
     padding: 15px;
 }
-
-h2 {
-    text-align: center;
-    margin-bottom: 15px;
-}
-
-/* DATE CARDS */
 .date-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 14px;
     margin-bottom: 20px;
 }
-
 .date-card {
     background: #fff;
     border-radius: 12px;
@@ -40,77 +27,55 @@ h2 {
     box-shadow: 0 6px 16px rgba(0,0,0,0.08);
     border-top: 5px solid #0ea5e9;
 }
-
 .date-card .date {
     font-size: 13px;
     color: #475569;
     font-weight: 600;
 }
-
 .date-card .count {
     font-size: 22px;
     font-weight: bold;
     color: #16a34a;
 }
-
-/* TABLE */
 .table-box {
     background: #fff;
     border-radius: 10px;
     box-shadow: 0 6px 18px rgba(0,0,0,0.08);
     overflow-x: auto;
 }
-
-table {
+.status-table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 1300px;
+    min-width: 1000px;
 }
-
-thead tr.group th {
+.status-table thead tr.group th {
     background: #0f172a;
     color: #fff;
     padding: 12px;
 }
-
-thead tr.header th {
+.status-table thead tr.header th {
     background: #f1f5f9;
     padding: 10px;
     border-bottom: 2px solid #cbd5e1;
 }
-
-td {
+.status-table td {
     padding: 9px;
     border-bottom: 1px solid #e5e7eb;
     text-align: center;
 }
-
 .match-row {
     background: #ecfdf3;
     border-left: 6px solid #16a34a;
 }
-
-.mac {
-    font-weight: 600;
-    color: #0f766e;
-}
-
-.status-active {
-    color: #15803d;
-    font-weight: bold;
-}
-
-.status-inactive {
-    color: #b91c1c;
-    font-weight: bold;
-}
-
+.mac { font-weight: 600; color: #0f766e; }
+.status-active  { color: #15803d; font-weight: bold; }
+.status-inactive{ color: #b91c1c; font-weight: bold; }
 .top-bar {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 10px;
 }
-
 .download-btn {
     background: #16a34a;
     color: #fff;
@@ -119,7 +84,6 @@ td {
     border-radius: 6px;
     cursor: pointer;
 }
-
 .footer-note {
     margin-top: 10px;
     font-size: 12px;
@@ -128,13 +92,11 @@ td {
 }
 </style>
 
-
 <script>
 function loadData() {
-    fetch("status_report.php")
+    fetch("mac/status_report.php")
         .then(res => res.text())
         .then(html => {
-
             const temp = document.createElement("div");
             temp.innerHTML = html;
 
@@ -155,42 +117,31 @@ function loadData() {
         });
 }
 
-window.onload = loadData;
-setInterval(loadData, 5000);
-</script>
-
-
-
-<script>
-
 function exportToExcel() {
-    let table = document.querySelector("table");
+    let table = document.querySelector(".status-table");
     let html = table.outerHTML.replace(/ /g, '%20');
     let filename = 'matched_mac_report_' +
         new Date().toISOString().slice(0,10) + '.xls';
-
     let link = document.createElement("a");
     link.href = 'data:application/vnd.ms-excel,' + html;
     link.download = filename;
     link.click();
 }
+
+window.onload = loadData;
+setInterval(loadData, 5000);
 </script>
-</head>
 
-<body>
-
-<div class="wrapper">
-
-    <h2>Live Matched MAC Address Status</h2>
+<div class="status-wrapper">
+    <div class="top-bar">
+        <h4>Live Matched MAC Address Status</h4>
+        <button class="download-btn" onclick="exportToExcel()">&#11015; Download Excel</button>
+    </div>
 
     <div id="summaryArea"></div>
 
-    <div class="top-bar">
-        <button class="download-btn" onclick="exportToExcel()">⬇ Download Excel</button>
-    </div>
-
     <div class="table-box">
-        <table>
+        <table class="status-table">
             <thead>
                 <tr class="group">
                     <th colspan="6">SYSTEM NAME DATA (TABLE-1)</th>
@@ -213,12 +164,12 @@ function exportToExcel() {
         </table>
     </div>
 
-    <!-- nirmal singh self code -->
     <div class="footer-note">
-        🔄 Auto refresh every 5 seconds | 🟢 Only matched MAC addresses shown 
+        &#128260; Auto refresh every 5 seconds | &#128994; Only matched MAC addresses shown
     </div>
-
 </div>
 
-</body>
-</html>
+            </div><!-- .animated -->
+        </div><!-- /.content -->
+
+<?php include('../layout/footer.php'); ?>

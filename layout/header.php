@@ -11,6 +11,7 @@ include('./database.php');
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <base href="/">
     <title>Admin</title>
     <meta name="description" content="Admin">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -30,9 +31,9 @@ include('./database.php');
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.0/sweetalert.min.js" async></script>
     
    <style>
-		#weatherWidget .currentDesc {
-			color: #ffffff!important;
-		}
+                #weatherWidget .currentDesc {
+                        color: #ffffff!important;
+                }
         .traffic-chart {
             min-height: 335px;
         }
