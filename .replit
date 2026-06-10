@@ -36,13 +36,13 @@ outputType = "console"
 name = "Start application"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "php -c php.ini -S 0.0.0.0:5000 -t ."
-waitForPort = 5000
-
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PHP_CLI_SERVER_WORKERS=8 php -c php.ini -S 0.0.0.0:5000 -t ."
+waitForPort = 5000
 
 [[ports]]
 localPort = 5000
