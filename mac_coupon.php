@@ -1,4 +1,43 @@
 <?php
+// Excel download must run before layout/header.php emits any HTML
+if(isset($_GET['excel'])){
+    session_start();
+    include(__DIR__ . '/database.php');
+    if(!isset($_SESSION['user_token']) || $_SESSION['user_type'] != 'admin'){
+        header("location:login.php");
+        exit();
+    }
+    $xq = mysqli_query($link, "
+        SELECT 
+            m.macid, m.name, m.status,
+            mc.daily_limit,
+            (SELECT COUNT(*) FROM test t WHERE t.macid = m.macid AND DATE(t.created_at) = CURDATE()) as today_count
+        FROM map m
+        LEFT JOIN mac_coupons mc ON m.macid = mc.macid
+        ORDER BY mc.daily_limit DESC, m.name ASC
+    ");
+    header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+    header('Content-Disposition: attachment; filename="mac_coupon_report_' . date('Y-m-d') . '.xls"');
+    header('Pragma: no-cache');
+    echo "\xEF\xBB\xBF";
+    echo "MAC ID\tName\tDaily Limit\tToday Used\tRemaining\tStatus\tDate\n";
+    while($xr = mysqli_fetch_assoc($xq)){
+        $has_coupon = !is_null($xr['daily_limit']);
+        $limit      = (int)($xr['daily_limit'] ?? 0);
+        $used       = (int)$xr['today_count'];
+        $remaining  = $has_coupon ? max(0, $limit - $used) : '-';
+        $daily_lim  = $has_coupon ? $limit : '-';
+        echo $xr['macid'] . "\t"
+           . $xr['name'] . "\t"
+           . $daily_lim . "\t"
+           . $used . "\t"
+           . $remaining . "\t"
+           . $xr['status'] . "\t"
+           . date('Y-m-d') . "\n";
+    }
+    exit();
+}
+
 include('layout/header.php');
 if(!isset($_SESSION['user_token']) || $_SESSION['user_type'] != 'admin'){
     header("location:login.php");
@@ -212,7 +251,10 @@ $main_data = mysqli_query($link, "
             <div class="card" style="border-radius:12px;">
                 <div class="card-header" style="border-radius:12px 12px 0 0;">
                     <strong><i class="fa fa-list"></i> MAC ID Coupon Status</strong>
-                    <span class="badge badge-primary float-right mt-1"><?= $total_macs ?> MAC IDs</span>
+                    <a href="mac_coupon.php?excel=1" class="btn btn-sm btn-success float-right">
+                        <i class="fa fa-file-excel-o"></i> Download Excel
+                    </a>
+                    <span class="badge badge-primary float-right mt-1 mr-2"><?= $total_macs ?> MAC IDs</span>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
