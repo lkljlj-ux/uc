@@ -1,29 +1,32 @@
 <?php
 ob_start();
 session_start();
-if(isset($_SESSION['user_token'])){ 
+if(isset($_SESSION['user_token'])){
     header("location:dashboard.php");
     exit();
 }
-?>
-<?php
-if(isset($_POST['login'])){
-     $email=$_POST['email'];
-     $password=$_POST['password'];
-     
-     $user_name="happynewyear@gmail.com";
-     $user_pass="Happynewyear1520@0"; 
-     
-     if($email==$user_name && $user_pass==$password){
-                 $_SESSION['user_token']=$user_name;
-                 $_SESSION['user_type']="admin";    
-         header("location:dashboard.php"); 
-     } else {
-         header("location:login.php?msg=wrong_password");
-     }
 
- }
-?> 
+if(isset($_POST['login'])){
+    include('database.php');
+    $username = mysqli_real_escape_string($link, trim($_POST['email']));
+    $password = md5(trim($_POST['password']));
+
+    $q = "SELECT * FROM admins WHERE username='$username' AND password='$password' AND status='active'";
+    $res = mysqli_query($link, $q);
+
+    if($res && mysqli_num_rows($res) > 0){
+        $row = mysqli_fetch_assoc($res);
+        $_SESSION['user_token']    = $row['username'];
+        $_SESSION['user_type']     = $row['user_type'];
+        $_SESSION['user_name']     = $row['full_name'];
+        header("location:dashboard.php");
+        exit();
+    } else {
+        header("location:login.php?msg=wrong_password");
+        exit();
+    }
+}
+?>
 <!doctype html>
 <!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang=""> <![endif]-->
 <!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8" lang=""> <![endif]-->
@@ -51,21 +54,19 @@ if(isset($_POST['login'])){
         <div class="container">
             <div class="login-content">
                 <div class="login-form">
-                                    <div class="login-logo">
-                                        </div><br>
+                    <div class="login-logo"></div><br>
                     <?php if(isset($_GET['msg']) && $_GET['msg']=='wrong_password'): ?>
                         <div class="alert alert-danger text-center">Email ya Password galat hai!</div>
                     <?php endif; ?>
                     <form action="" method="post">
                         <div class="form-group">
-                            <label><b>Email address</b></label>
-                            <input type="email" name="email" class="form-control" placeholder="Email">
+                            <label><b>Email address / Username</b></label>
+                            <input type="text" name="email" class="form-control" placeholder="Email ya Username">
                         </div>
                         <div class="form-group">
                             <label><b>Password</b></label>
                             <input type="password" name="password" class="form-control" placeholder="Password">
                         </div>
-
                         <button type="submit" name="login" value="login" class="btn btn-success btn-flat m-b-30 m-t-30">Sign in</button>
                     </form>
                 </div>
