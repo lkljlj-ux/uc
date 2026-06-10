@@ -78,7 +78,7 @@ $result = mysqli_query($link, "SELECT * FROM test ORDER BY id DESC");
                                         </div>
                                         <div class="form-group col-md-6">
                                             <label><b>Start Time</b></label>
-                                            <input type="datetime-local" name="start_time" class="form-control" required>
+                                            <input type="text" name="start_time" class="form-control" placeholder="Start time likhein" required>
                                         </div>
                                     </div>
                                     <div class="form-group">
