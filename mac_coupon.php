@@ -19,17 +19,21 @@ while($cr = mysqli_fetch_assoc($coupon_rows)){
     $cnt_res = mysqli_query($link, "SELECT COUNT(*) as c FROM test WHERE macid='$mac' AND DATE(created_at)=CURDATE()");
     $today_count = (int)mysqli_fetch_assoc($cnt_res)['c'];
 
+    // Current map status fetch karo — decision ke liye
+    $map_now = mysqli_fetch_assoc(mysqli_query($link, "SELECT status FROM map WHERE macid='$mac'"));
+    $cur_status = $map_now ? $map_now['status'] : '';
+
     if($today_count >= $limit && $limit > 0){
-        // Coupon khatam → sirf tabhi INACTIVE karo agar abhi ACTIVE hai
-        mysqli_query($link, "UPDATE map SET status='INACTIVE' WHERE macid='$mac' AND status='ACTIVE'");
-        mysqli_query($link, "UPDATE mac_coupons SET deactivated_by_coupon=1 WHERE macid='$mac'");
-    } elseif($today_count < $limit && $cr['deactivated_by_coupon'] == 1){
-        // Naya din / count kam hai — sirf tabhi ACTIVE karo jab coupon ne hi inactive kiya tha
-        // Check karo: map.status='INACTIVE' aur deactivated_by_coupon=1 — tabhi reset karo
-        $map_check = mysqli_fetch_assoc(mysqli_query($link, "SELECT status FROM map WHERE macid='$mac'"));
-        if($map_check && $map_check['status'] === 'INACTIVE'){
-            mysqli_query($link, "UPDATE map SET status='ACTIVE' WHERE macid='$mac'");
+        // Sirf tabhi act karo jab machine abhi ACTIVE hai (manually INACTIVE ko touch mat karo)
+        if($cur_status === 'ACTIVE'){
+            // ACTIVE → INACTIVE transition by coupon
+            mysqli_query($link, "UPDATE map SET status='INACTIVE' WHERE macid='$mac'");
+            mysqli_query($link, "UPDATE mac_coupons SET deactivated_by_coupon=1 WHERE macid='$mac'");
         }
+        // Agar pehle se INACTIVE hai (manually) → flag mat set karo, state preserve karo
+    } elseif($today_count < $limit && $cr['deactivated_by_coupon'] == 1){
+        // Coupon ne deactivate kiya tha, count ab limit se kam hai (naya din) → wapas ACTIVE
+        mysqli_query($link, "UPDATE map SET status='ACTIVE' WHERE macid='$mac'");
         mysqli_query($link, "UPDATE mac_coupons SET deactivated_by_coupon=0 WHERE macid='$mac'");
     }
 }
