@@ -85,7 +85,7 @@ include(__DIR__.'/../database.php');
         <header id="header" class="header">
             <div class="top-left">
                 <div class="navbar-header">
-                    <h3 style="text-align: center;font-size: 48px;">Anish</h3>
+                    <h3 style="text-align: center;font-size: 40px;">Admin panel</h3>
                 </div>
             </div>
             <div class="top-right">
