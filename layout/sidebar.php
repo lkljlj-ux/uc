@@ -28,7 +28,7 @@
                         <a href="dashboard.php"><i class="menu-icon fa fa-laptop"></i>Dashboard </a>
                     </li>
 
-                    <?php if($_SESSION['user_type']=='admin'){?>
+                    <?php if(isset($_SESSION['user_type']) && $_SESSION['user_type']=='admin'){?>
                                                 <li class=" <?php if($page=='operator_add.php'){ echo 'active';} ?>">
                                                         <a href="operator_add.php"><i class="menu-icon fa fa-user-plus"></i> Operator Add</a>
                                                 </li>
