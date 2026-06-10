@@ -8,9 +8,9 @@ $summarySql = "
     SELECT s.system_date, SUM(s.user_count) AS total_count
     FROM system_name_data s
     INNER JOIN map m ON TRIM(UPPER(s.macId)) = TRIM(UPPER(m.macid))
-    WHERE s.system_date >= CURDATE() - INTERVAL 7 DAY
     GROUP BY s.system_date
     ORDER BY s.system_date DESC
+    LIMIT 15
 ";
 $summary = $conn->query($summarySql);
 if ($summary && $summary->num_rows > 0) {
