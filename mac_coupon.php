@@ -7,33 +7,83 @@ if(isset($_GET['excel'])){
         header("location:login.php");
         exit();
     }
-    $xq = mysqli_query($link, "
-        SELECT 
-            m.macid, m.name, m.status,
-            mc.daily_limit,
-            (SELECT COUNT(*) FROM test t WHERE t.macid = m.macid AND DATE(t.created_at) = CURDATE()) as today_count
-        FROM map m
-        LEFT JOIN mac_coupons mc ON m.macid = mc.macid
-        ORDER BY mc.daily_limit DESC, m.name ASC
-    ");
+
+    // Filter params
+    $xdate_from = (isset($_GET['xdate_from']) && $_GET['xdate_from']) ? $_GET['xdate_from'] : date('Y-m-d');
+    $xdate_to   = (isset($_GET['xdate_to'])   && $_GET['xdate_to'])   ? $_GET['xdate_to']   : date('Y-m-d');
+    $xstatus    = isset($_GET['xstatus']) ? trim($_GET['xstatus']) : '';
+
+    // Sanitize dates
+    $xdate_from = date('Y-m-d', strtotime($xdate_from));
+    $xdate_to   = date('Y-m-d', strtotime($xdate_to));
+    $xdate_from_e = mysqli_real_escape_string($link, $xdate_from);
+    $xdate_to_e   = mysqli_real_escape_string($link, $xdate_to);
+
+    $is_today_only = ($xdate_from === date('Y-m-d') && $xdate_to === date('Y-m-d'));
+
     header('Content-Type: application/vnd.ms-excel; charset=utf-8');
-    header('Content-Disposition: attachment; filename="mac_coupon_report_' . date('Y-m-d') . '.xls"');
     header('Pragma: no-cache');
     echo "\xEF\xBB\xBF";
-    echo "MAC ID\tName\tDaily Limit\tToday Used\tRemaining\tStatus\tDate\n";
-    while($xr = mysqli_fetch_assoc($xq)){
-        $has_coupon = !is_null($xr['daily_limit']);
-        $limit      = (int)($xr['daily_limit'] ?? 0);
-        $used       = (int)$xr['today_count'];
-        $remaining  = $has_coupon ? max(0, $limit - $used) : '-';
-        $daily_lim  = $has_coupon ? $limit : '-';
-        echo $xr['macid'] . "\t"
-           . $xr['name'] . "\t"
-           . $daily_lim . "\t"
-           . $used . "\t"
-           . $remaining . "\t"
-           . $xr['status'] . "\t"
-           . date('Y-m-d') . "\n";
+
+    if(!$is_today_only){
+        // Historical export from mac_coupon_logs
+        header('Content-Disposition: attachment; filename="mac_coupon_report_' . $xdate_from . '_to_' . $xdate_to . '.xls"');
+        $xwhere = "WHERE log_date BETWEEN '$xdate_from_e' AND '$xdate_to_e'";
+        $xq = mysqli_query($link, "
+            SELECT macid, mac_name, daily_limit, used_count, log_date
+            FROM mac_coupon_logs
+            $xwhere
+            ORDER BY log_date DESC, macid ASC
+        ");
+        echo "MAC ID\tName\tDaily Limit\tUsed Count\tDate\n";
+        while($xr = mysqli_fetch_assoc($xq)){
+            echo $xr['macid'] . "\t"
+               . $xr['mac_name'] . "\t"
+               . $xr['daily_limit'] . "\t"
+               . $xr['used_count'] . "\t"
+               . $xr['log_date'] . "\n";
+        }
+    } else {
+        // Live today's data with optional status filter
+        header('Content-Disposition: attachment; filename="mac_coupon_report_' . date('Y-m-d') . '.xls"');
+        $xwhere = 'WHERE 1=1';
+        if($xstatus === 'active'){
+            $xwhere .= " AND m.status='ACTIVE'";
+        } elseif($xstatus === 'coupon_khatam'){
+            $xwhere .= " AND mc.deactivated_by_coupon=1";
+        } elseif($xstatus === 'inactive'){
+            $xwhere .= " AND m.status='INACTIVE' AND (mc.deactivated_by_coupon IS NULL OR mc.deactivated_by_coupon=0)";
+        } elseif($xstatus === 'no_coupon'){
+            $xwhere .= " AND mc.macid IS NULL";
+        }
+        $xq = mysqli_query($link, "
+            SELECT
+                m.macid, m.name, m.status,
+                mc.daily_limit, mc.deactivated_by_coupon,
+                (SELECT COUNT(*) FROM test t WHERE t.macid = m.macid AND DATE(t.created_at) = CURDATE()) as today_count
+            FROM map m
+            LEFT JOIN mac_coupons mc ON m.macid = mc.macid
+            $xwhere
+            ORDER BY mc.daily_limit DESC, m.name ASC
+        ");
+        echo "MAC ID\tName\tDaily Limit\tToday Used\tRemaining\tStatus\tDate\n";
+        while($xr = mysqli_fetch_assoc($xq)){
+            $has_coupon  = !is_null($xr['daily_limit']);
+            $limit       = (int)($xr['daily_limit'] ?? 0);
+            $used        = (int)$xr['today_count'];
+            $remaining   = $has_coupon ? max(0, $limit - $used) : '-';
+            $daily_lim   = $has_coupon ? $limit : '-';
+            if($xr['status'] === 'ACTIVE')          $status_label = 'Active';
+            elseif($xr['deactivated_by_coupon'])     $status_label = 'Coupon Khatam';
+            else                                     $status_label = 'Inactive';
+            echo $xr['macid'] . "\t"
+               . $xr['name'] . "\t"
+               . $daily_lim . "\t"
+               . $used . "\t"
+               . $remaining . "\t"
+               . $status_label . "\t"
+               . date('Y-m-d') . "\n";
+        }
     }
     exit();
 }
@@ -150,6 +200,22 @@ if($hist_mac !== '') $hist_where .= " AND macid='$hist_mac'";
 $history_data = mysqli_query($link, "SELECT * FROM mac_coupon_logs $hist_where ORDER BY log_date DESC, id DESC LIMIT 200");
 $history_total = mysqli_fetch_assoc(mysqli_query($link, "SELECT COUNT(*) as c FROM mac_coupon_logs $hist_where"))['c'];
 
+// Main table status filter
+$filter_status = isset($_GET['filter_status']) ? trim($_GET['filter_status']) : '';
+$filter_date_from = (isset($_GET['filter_date_from']) && $_GET['filter_date_from']) ? $_GET['filter_date_from'] : date('Y-m-d');
+$filter_date_to   = (isset($_GET['filter_date_to'])   && $_GET['filter_date_to'])   ? $_GET['filter_date_to']   : date('Y-m-d');
+
+$main_where = 'WHERE 1=1';
+if($filter_status === 'active'){
+    $main_where .= " AND m.status='ACTIVE'";
+} elseif($filter_status === 'coupon_khatam'){
+    $main_where .= " AND mc.deactivated_by_coupon=1";
+} elseif($filter_status === 'inactive'){
+    $main_where .= " AND m.status='INACTIVE' AND (mc.deactivated_by_coupon IS NULL OR mc.deactivated_by_coupon=0)";
+} elseif($filter_status === 'no_coupon'){
+    $main_where .= " AND mc.macid IS NULL";
+}
+
 // Main data: map LEFT JOIN mac_coupons + today's count
 $main_data = mysqli_query($link, "
     SELECT 
@@ -158,6 +224,7 @@ $main_data = mysqli_query($link, "
         (SELECT COUNT(*) FROM test t WHERE t.macid = m.macid AND DATE(t.created_at) = CURDATE()) as today_count
     FROM map m
     LEFT JOIN mac_coupons mc ON m.macid = mc.macid
+    $main_where
     ORDER BY mc.daily_limit DESC, m.name ASC
 ");
 ?>
@@ -269,10 +336,43 @@ $main_data = mysqli_query($link, "
             <div class="card" style="border-radius:12px;">
                 <div class="card-header" style="border-radius:12px 12px 0 0;">
                     <strong><i class="fa fa-list"></i> MAC ID Coupon Status</strong>
-                    <a href="mac_coupon.php?excel=1" class="btn btn-sm btn-success float-right">
-                        <i class="fa fa-file-excel-o"></i> Download Excel
-                    </a>
-                    <span class="badge badge-primary float-right mt-1 mr-2"><?= $total_macs ?> MAC IDs</span>
+                    <span class="badge badge-primary float-right mt-1 mr-2"><?= mysqli_num_rows($main_data) ?> MAC IDs</span>
+                </div>
+                <!-- Filter Form -->
+                <div class="card-body border-bottom py-2 px-3" style="background:#f8f9fa;border-radius:0;">
+                    <form method="GET" action="mac_coupon.php" class="form-inline flex-wrap" style="gap:8px;">
+                        <input type="hidden" name="tab" value="main">
+                        <div class="form-group mr-2 mb-1">
+                            <label class="mr-1" style="font-size:13px;font-weight:600;">Status:</label>
+                            <select name="filter_status" class="form-control form-control-sm">
+                                <option value="" <?= $filter_status==='' ? 'selected':'' ?>>Sab</option>
+                                <option value="active"        <?= $filter_status==='active'        ? 'selected':'' ?>>Active</option>
+                                <option value="coupon_khatam" <?= $filter_status==='coupon_khatam' ? 'selected':'' ?>>Coupon Khatam</option>
+                                <option value="inactive"      <?= $filter_status==='inactive'      ? 'selected':'' ?>>Inactive (Manual)</option>
+                                <option value="no_coupon"     <?= $filter_status==='no_coupon'     ? 'selected':'' ?>>No Coupon</option>
+                            </select>
+                        </div>
+                        <div class="form-group mr-2 mb-1">
+                            <label class="mr-1" style="font-size:13px;font-weight:600;">From:</label>
+                            <input type="date" name="filter_date_from" class="form-control form-control-sm"
+                                   value="<?= htmlspecialchars($filter_date_from) ?>">
+                        </div>
+                        <div class="form-group mr-2 mb-1">
+                            <label class="mr-1" style="font-size:13px;font-weight:600;">To:</label>
+                            <input type="date" name="filter_date_to" class="form-control form-control-sm"
+                                   value="<?= htmlspecialchars($filter_date_to) ?>">
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-primary mb-1">
+                            <i class="fa fa-filter"></i> Filter
+                        </button>
+                        <a href="mac_coupon.php" class="btn btn-sm btn-secondary mb-1">
+                            <i class="fa fa-times"></i> Reset
+                        </a>
+                        <a href="mac_coupon.php?excel=1&xstatus=<?= urlencode($filter_status) ?>&xdate_from=<?= urlencode($filter_date_from) ?>&xdate_to=<?= urlencode($filter_date_to) ?>"
+                           class="btn btn-sm btn-success mb-1 ml-auto">
+                            <i class="fa fa-file-excel-o"></i> Download Excel
+                        </a>
+                    </form>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
