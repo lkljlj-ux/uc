@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "daFFAykUTiuYXPh0Bgthr"
+uri = "file://project_with_db.zip"
+type = "unspecified"
+title = "Complete Project with MySQL Database"
