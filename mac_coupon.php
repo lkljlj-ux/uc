@@ -201,7 +201,7 @@ $history_data = mysqli_query($link, "SELECT * FROM mac_coupon_logs $hist_where O
 $history_total = mysqli_fetch_assoc(mysqli_query($link, "SELECT COUNT(*) as c FROM mac_coupon_logs $hist_where"))['c'];
 
 // Main table status filter
-$filter_status = isset($_GET['filter_status']) ? trim($_GET['filter_status']) : '';
+$filter_status    = isset($_GET['filter_status'])    ? trim($_GET['filter_status'])    : '';
 $filter_date_from = (isset($_GET['filter_date_from']) && $_GET['filter_date_from']) ? $_GET['filter_date_from'] : date('Y-m-d');
 $filter_date_to   = (isset($_GET['filter_date_to'])   && $_GET['filter_date_to'])   ? $_GET['filter_date_to']   : date('Y-m-d');
 
@@ -216,7 +216,23 @@ if($filter_status === 'active'){
     $main_where .= " AND mc.macid IS NULL";
 }
 
-// Main data: map LEFT JOIN mac_coupons + today's count
+// Pagination
+$per_page    = 10;
+$cur_page    = max(1, (int)($_GET['pg'] ?? 1));
+$offset      = ($cur_page - 1) * $per_page;
+
+// Total count for pagination
+$total_count_res = mysqli_fetch_assoc(mysqli_query($link, "
+    SELECT COUNT(*) as c FROM map m
+    LEFT JOIN mac_coupons mc ON m.macid = mc.macid
+    $main_where
+"));
+$total_filtered = (int)$total_count_res['c'];
+$total_pages    = max(1, (int)ceil($total_filtered / $per_page));
+$cur_page       = min($cur_page, $total_pages);
+$offset         = ($cur_page - 1) * $per_page;
+
+// Main data: map LEFT JOIN mac_coupons + today's count — paginated
 $main_data = mysqli_query($link, "
     SELECT 
         m.id, m.name, m.macid, m.status,
@@ -226,6 +242,7 @@ $main_data = mysqli_query($link, "
     LEFT JOIN mac_coupons mc ON m.macid = mc.macid
     $main_where
     ORDER BY mc.daily_limit DESC, m.name ASC
+    LIMIT $per_page OFFSET $offset
 ");
 ?>
 
@@ -295,7 +312,7 @@ $main_data = mysqli_query($link, "
                                 <input type="text" class="form-control" value="<?= htmlspecialchars($edit_mac) ?>" readonly>
                                 <input type="hidden" name="sel_macid" value="<?= htmlspecialchars($edit_mac) ?>">
                             <?php else: ?>
-                                <select name="sel_macid" class="form-control" required>
+                                <select name="sel_macid" id="sel_macid_select" class="form-control" required>
                                     <option value="">-- MAC ID chunein --</option>
                                     <?php
                                     mysqli_data_seek($all_macs, 0);
@@ -459,6 +476,49 @@ $main_data = mysqli_query($link, "
                         </tbody>
                     </table>
                     </div>
+
+                    <!-- Pagination -->
+                    <?php if($total_pages > 1): ?>
+                    <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top" style="background:#f8f9fa;">
+                        <small class="text-muted">
+                            Showing <b><?= $offset+1 ?>–<?= min($offset+$per_page, $total_filtered) ?></b> of <b><?= $total_filtered ?></b> MAC IDs
+                        </small>
+                        <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            <!-- Prev -->
+                            <li class="page-item <?= $cur_page<=1 ? 'disabled':'' ?>">
+                                <a class="page-link" href="?pg=<?= $cur_page-1 ?>&filter_status=<?= urlencode($filter_status) ?>&filter_date_from=<?= urlencode($filter_date_from) ?>&filter_date_to=<?= urlencode($filter_date_to) ?>">
+                                    <i class="fa fa-chevron-left"></i>
+                                </a>
+                            </li>
+                            <!-- Page numbers -->
+                            <?php
+                            $start_p = max(1, $cur_page - 2);
+                            $end_p   = min($total_pages, $cur_page + 2);
+                            if($start_p > 1): ?>
+                                <li class="page-item"><a class="page-link" href="?pg=1&filter_status=<?= urlencode($filter_status) ?>&filter_date_from=<?= urlencode($filter_date_from) ?>&filter_date_to=<?= urlencode($filter_date_to) ?>">1</a></li>
+                                <?php if($start_p > 2): ?><li class="page-item disabled"><span class="page-link">…</span></li><?php endif; ?>
+                            <?php endif; ?>
+                            <?php for($p = $start_p; $p <= $end_p; $p++): ?>
+                                <li class="page-item <?= $p==$cur_page ? 'active':'' ?>">
+                                    <a class="page-link" href="?pg=<?= $p ?>&filter_status=<?= urlencode($filter_status) ?>&filter_date_from=<?= urlencode($filter_date_from) ?>&filter_date_to=<?= urlencode($filter_date_to) ?>"><?= $p ?></a>
+                                </li>
+                            <?php endfor; ?>
+                            <?php if($end_p < $total_pages): ?>
+                                <?php if($end_p < $total_pages-1): ?><li class="page-item disabled"><span class="page-link">…</span></li><?php endif; ?>
+                                <li class="page-item"><a class="page-link" href="?pg=<?= $total_pages ?>&filter_status=<?= urlencode($filter_status) ?>&filter_date_from=<?= urlencode($filter_date_from) ?>&filter_date_to=<?= urlencode($filter_date_to) ?>"><?= $total_pages ?></a></li>
+                            <?php endif; ?>
+                            <!-- Next -->
+                            <li class="page-item <?= $cur_page>=$total_pages ? 'disabled':'' ?>">
+                                <a class="page-link" href="?pg=<?= $cur_page+1 ?>&filter_status=<?= urlencode($filter_status) ?>&filter_date_from=<?= urlencode($filter_date_from) ?>&filter_date_to=<?= urlencode($filter_date_to) ?>">
+                                    <i class="fa fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                        </nav>
+                    </div>
+                    <?php endif; ?>
+
                 </div>
             </div>
         </div>
@@ -563,5 +623,33 @@ $main_data = mysqli_query($link, "
     </div>
 </div>
 <!-- ═══ END HISTORY ═══ -->
+
+<!-- Select2 for MAC ID dropdown search -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<style>
+.select2-container--default .select2-selection--single {
+    height: 38px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 36px;
+    color: #495057;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 36px;
+}
+.select2-container { width: 100% !important; }
+</style>
+<script>
+$(document).ready(function(){
+    $('#sel_macid_select').select2({
+        placeholder: '-- MAC ID chunein (search karein) --',
+        allowClear: true,
+        width: '100%'
+    });
+});
+</script>
 
 <?php include('layout/footer.php'); ?>
