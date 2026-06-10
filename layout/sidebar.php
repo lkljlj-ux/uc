@@ -36,7 +36,7 @@
                                                         <a href="sdd.php"><i class="menu-icon fa fa-plus"></i> system_date_data</a>
                                                 </li>
                                                 <li class=" <?php if($pages=='status'){ echo 'active';} ?>">
-                                                        <a href="mac1/status.php"><i class="menu-icon fa fa-trash"></i> All Report</a>
+                                                        <a href="mac/status.php"><i class="menu-icon fa fa-trash"></i> All Report</a>
                                                 </li>
                                                 <li class="">
                                                         <a href="logout.php"><i class="menu-icon fa fa-sign-out"></i> Logout</a>
