@@ -1,21 +1,21 @@
 <style>
-	.switch {
-		position: relative;
-		display: inline-block;
-		width: 50px;
-		height: 30px;
-	}
-	input:checked + .slider:before {
-		-webkit-transform: translateX(20px);
-		-ms-transform: translateX(20px);
-		transform: translateX(20px);
-	}
-	.slider:before {
-		height: 20px;
-		width: 20px;
-		left: 5px;
-		bottom: 5px;
-	}
+        .switch {
+                position: relative;
+                display: inline-block;
+                width: 50px;
+                height: 30px;
+        }
+        input:checked + .slider:before {
+                -webkit-transform: translateX(20px);
+                -ms-transform: translateX(20px);
+                transform: translateX(20px);
+        }
+        .slider:before {
+                height: 20px;
+                width: 20px;
+                left: 5px;
+                bottom: 5px;
+        }
 </style>
 
 <!-- Left Panel -->
@@ -23,27 +23,24 @@
         <nav class="navbar navbar-expand-sm navbar-default">
             <div id="main-menu" class="main-menu collapse navbar-collapse">
                 <ul class="nav navbar-nav">
-				<?php $page=basename($_SERVER['PHP_SELF']); ?>
+                                <?php $page=basename($_SERVER['PHP_SELF']); ?>
                     <li class="<?php if($page=='index.php'){ echo 'active';} ?>">
                         <a href="dashboard.php"><i class="menu-icon fa fa-laptop"></i>Dashboard </a>
                     </li>
 
                     <?php if($_SESSION['user_type']=='admin'){?>
-						<li class=" <?php if($pages=='stest2'){ echo 'active';} ?>">
-							<a href="st.php"><i class="menu-icon fa fa-plus"></i>Test2</a>
-						</li>
-						<li class=" <?php if($pages=='test2'){ echo 'active';} ?>">
-							<a href="map.php"><i class="menu-icon fa fa-plus"></i> Map machine</a>
-						</li>
-						<li class=" <?php if($pages=='system_date_data'){ echo 'active';} ?>">
-							<a href="sdd.php"><i class="menu-icon fa fa-plus"></i> system_date_data</a>
-						</li>
-						<li class=" <?php if($pages=='status'){ echo 'active';} ?>">
-							<a href="mac1/status.php"><i class="menu-icon fa fa-trash"></i> All Report</a>
-						</li>
-						<li class="">
-							<a href="logout.php"><i class="menu-icon fa fa-sign-out"></i> Logout</a>
-						</li>
+                                                <li class=" <?php if($pages=='test2'){ echo 'active';} ?>">
+                                                        <a href="map.php"><i class="menu-icon fa fa-plus"></i> Map machine</a>
+                                                </li>
+                                                <li class=" <?php if($pages=='system_date_data'){ echo 'active';} ?>">
+                                                        <a href="sdd.php"><i class="menu-icon fa fa-plus"></i> system_date_data</a>
+                                                </li>
+                                                <li class=" <?php if($pages=='status'){ echo 'active';} ?>">
+                                                        <a href="mac1/status.php"><i class="menu-icon fa fa-trash"></i> All Report</a>
+                                                </li>
+                                                <li class="">
+                                                        <a href="logout.php"><i class="menu-icon fa fa-sign-out"></i> Logout</a>
+                                                </li>
                     <?php }?>
                 </ul>
             </div><!-- /.navbar-collapse -->
