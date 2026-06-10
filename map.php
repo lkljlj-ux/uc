@@ -9,25 +9,17 @@ if(!isset($_SESSION['user_token']) || $_SESSION['user_type'] != 'admin'){
 $success = '';
 $error   = '';
 
-// XML Download
-if(isset($_GET['xml'])){
-    $rows = [];
+// Excel (CSV) Download
+if(isset($_GET['excel'])){
     $q = mysqli_query($link, "SELECT * FROM map ORDER BY id ASC");
-    while($r = mysqli_fetch_assoc($q)) $rows[] = $r;
-
-    header('Content-Type: application/xml; charset=utf-8');
-    header('Content-Disposition: attachment; filename="map_data_' . date('Y-m-d') . '.xml"');
-    echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-    echo "<map_data>\n";
-    foreach($rows as $r){
-        echo "  <record>\n";
-        echo "    <id>" . htmlspecialchars($r['id']) . "</id>\n";
-        echo "    <name>" . htmlspecialchars($r['name']) . "</name>\n";
-        echo "    <macid>" . htmlspecialchars($r['macid']) . "</macid>\n";
-        echo "    <status>" . htmlspecialchars($r['status']) . "</status>\n";
-        echo "  </record>\n";
+    header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+    header('Content-Disposition: attachment; filename="map_data_' . date('Y-m-d') . '.xls"');
+    header('Pragma: no-cache');
+    echo "\xEF\xBB\xBF"; // UTF-8 BOM for Excel
+    echo "ID\tName\tMAC ID\tStatus\n";
+    while($r = mysqli_fetch_assoc($q)){
+        echo $r['id'] . "\t" . $r['name'] . "\t" . $r['macid'] . "\t" . $r['status'] . "\n";
     }
-    echo "</map_data>";
     exit();
 }
 
@@ -158,8 +150,8 @@ $col   = 0;
                 <div class="card">
                     <div class="card-header">
                         <strong class="card-title">All Map Data</strong>
-                        <a href="map.php?xml=1" class="btn btn-sm btn-primary float-right">
-                            <i class="fa fa-download"></i> Download XML
+                        <a href="map.php?excel=1" class="btn btn-sm btn-success float-right">
+                            <i class="fa fa-file-excel-o"></i> Download Excel
                         </a>
                     </div>
                     <div class="card-body">
