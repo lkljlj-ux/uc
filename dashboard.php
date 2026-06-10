@@ -1,7 +1,7 @@
 <?php 
 include('layout/header.php');
 if(!isset($_SESSION['user_token'])){ 
-    header("location:loginmm.php");
+    header("location:login.php");
     exit();
 }
 ?>
@@ -12,7 +12,7 @@ if(!isset($_SESSION['user_token'])){
                 <?php if($_SESSION['user_type']=='admin'){?>
                 <!-- Widgets  -->
                 <div class="row">
-				
+                                
                    <!-- <div class="col-lg-3 col-md-6">
                         <div class="card">
                             <div class="card-body">
@@ -48,11 +48,11 @@ if(!isset($_SESSION['user_token'])){
                             </div>
                         </div>
                     </div>
-					 -->
-					
+                                         -->
+                                        
                     <div class="col-lg-6 col-md-6">
                         <div class="card">
-							<a href="products.php">
+                                                        <a href="products.php">
                             <div class="card-body">
                                 <div class="stat-widget-five">
                                     <div class="stat-icon dib flat-color-3">
@@ -62,7 +62,7 @@ if(!isset($_SESSION['user_token'])){
                                     </div>
                                 </div>
                             </div>
-							</a>
+                                                        </a>
                         </div>
                     </div>
                 </div>
