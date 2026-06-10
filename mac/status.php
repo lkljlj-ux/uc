@@ -52,6 +52,26 @@ if(!isset($_SESSION['user_token'])){
         <button class="download-btn" onclick="exportToExcel()">&#11015; Download Excel</button>
     </div>
 
+    <!-- Date Filter -->
+    <div class="card mb-3">
+        <div class="card-body py-2">
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <label class="mb-0"><b>From:</b></label>
+                    <input type="date" id="from_date" class="form-control form-control-sm d-inline-block" style="width:160px;">
+                </div>
+                <div class="col-auto">
+                    <label class="mb-0"><b>To:</b></label>
+                    <input type="date" id="to_date" class="form-control form-control-sm d-inline-block" style="width:160px;">
+                </div>
+                <div class="col-auto mt-1">
+                    <button class="btn btn-sm btn-primary" onclick="applyFilter()">&#128269; Filter</button>
+                    <button class="btn btn-sm btn-secondary ml-1" onclick="resetFilter()">&#10006; Reset</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Date Summary Cards -->
     <div id="summaryArea"></div>
 
@@ -82,8 +102,12 @@ if(!isset($_SESSION['user_token'])){
 <script>
 var dtTable = null;
 
-function loadData() {
-    fetch("mac/status_report.php")
+function loadData(fromDate, toDate) {
+    let url = "mac/status_report.php";
+    if (fromDate && toDate) {
+        url += "?from=" + fromDate + "&to=" + toDate;
+    }
+    fetch(url)
         .then(res => res.text())
         .then(html => {
             const temp = document.createElement("div");
@@ -112,6 +136,23 @@ function loadData() {
         .catch(err => console.error("Fetch error:", err));
 }
 
+function applyFilter() {
+    const from = document.getElementById("from_date").value;
+    const to   = document.getElementById("to_date").value;
+    if (!from || !to) { alert("Dono dates select karo!"); return; }
+    if (from > to)    { alert("From date, To date se pehle honi chahiye!"); return; }
+    clearInterval(autoRefresh);
+    loadData(from, to);
+}
+
+function resetFilter() {
+    document.getElementById("from_date").value = "";
+    document.getElementById("to_date").value   = "";
+    clearInterval(autoRefresh);
+    loadData();
+    autoRefresh = setInterval(loadData, 5000);
+}
+
 function exportToExcel() {
     let table = document.getElementById("statusTable");
     let html = table.outerHTML.replace(/ /g, '%20');
@@ -122,9 +163,10 @@ function exportToExcel() {
     link.click();
 }
 
+var autoRefresh;
 window.onload = function() {
     loadData();
-    setInterval(loadData, 5000);
+    autoRefresh = setInterval(loadData, 5000);
 };
 </script>
 

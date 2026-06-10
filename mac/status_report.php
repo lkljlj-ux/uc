@@ -2,6 +2,10 @@
 $conn = new mysqli("localhost", "aadhaar_test", "ftYI6.B#s2K&", "aadhaar_test");
 if ($conn->connect_error) { die("DB Error"); }
 
+$fromDate = isset($_GET['from']) ? $conn->real_escape_string($_GET['from']) : null;
+$toDate   = isset($_GET['to'])   ? $conn->real_escape_string($_GET['to'])   : null;
+$hasFilter = $fromDate && $toDate;
+
 // Date summary cards (last 7 days)
 echo "<div id='cards-data'><div class='date-cards'>";
 $summarySql = "
@@ -26,10 +30,15 @@ if ($summary && $summary->num_rows > 0) {
 echo "</div></div>";
 
 // Main table rows — user_id, user_count, macId, status, system_date
+$dateWhere = $hasFilter
+    ? "AND s.system_date BETWEEN '$fromDate' AND '$toDate'"
+    : "";
+
 $dataSql = "
     SELECT s.user_id, s.user_count, s.macId, m.status, s.system_date
     FROM system_name_data s
     INNER JOIN map m ON TRIM(UPPER(s.macId)) = TRIM(UPPER(m.macid))
+    WHERE 1=1 $dateWhere
     ORDER BY s.system_date DESC
 ";
 $data = $conn->query($dataSql);
