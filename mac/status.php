@@ -100,21 +100,18 @@ function loadData() {
             const temp = document.createElement("div");
             temp.innerHTML = html;
 
+            // Load date summary cards
             const cards = temp.querySelector("#cards-data");
             document.getElementById("summaryArea").innerHTML =
-                cards ? cards.innerHTML : "";
+                cards ? cards.outerHTML : "";
 
-            const liveTbody = document.getElementById("liveData");
-            liveTbody.innerHTML = "";
-
-            const table = document.createElement("table");
-            table.innerHTML = "<tbody>" + html + "</tbody>";
-
-            const rows = table.querySelectorAll("tr");
-            rows.forEach(row => {
-                liveTbody.appendChild(row);
-            });
-        });
+            // Load table rows
+            const tableData = temp.querySelector("#table-data");
+            if (tableData) {
+                document.getElementById("liveData").innerHTML = tableData.innerHTML;
+            }
+        })
+        .catch(err => console.error("Fetch error:", err));
 }
 
 function exportToExcel() {
@@ -144,13 +141,14 @@ setInterval(loadData, 5000);
         <table class="status-table">
             <thead>
                 <tr class="group">
-                    <th colspan="4">Live Matched MAC Report</th>
+                    <th colspan="5">Live Matched MAC Report</th>
                 </tr>
                 <tr class="header">
                     <th>User ID</th>
                     <th>Count</th>
                     <th>MAC ID</th>
                     <th>Status</th>
+                    <th>Date</th>
                 </tr>
             </thead>
             <tbody id="liveData"></tbody>
