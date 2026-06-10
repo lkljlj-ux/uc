@@ -68,6 +68,13 @@ while($cr = mysqli_fetch_assoc($coupon_rows)){
             // ACTIVE → INACTIVE transition by coupon
             mysqli_query($link, "UPDATE map SET status='INACTIVE' WHERE macid='$mac'");
             mysqli_query($link, "UPDATE mac_coupons SET deactivated_by_coupon=1 WHERE macid='$mac'");
+            // Log entry — ek din mein sirf ek entry (INSERT IGNORE via unique key simulation)
+            $mac_name_r = mysqli_fetch_assoc(mysqli_query($link, "SELECT name FROM map WHERE macid='$mac'"));
+            $mac_name_e = mysqli_real_escape_string($link, $mac_name_r ? $mac_name_r['name'] : '');
+            $log_chk = mysqli_query($link, "SELECT id FROM mac_coupon_logs WHERE macid='$mac' AND log_date=CURDATE()");
+            if(mysqli_num_rows($log_chk) == 0){
+                mysqli_query($link, "INSERT INTO mac_coupon_logs (macid, mac_name, daily_limit, used_count, log_date) VALUES ('$mac','$mac_name_e',$limit,$today_count,CURDATE())");
+            }
         }
         // Agar pehle se INACTIVE hai (manually) → flag mat set karo, state preserve karo
     } elseif($today_count < $limit && $cr['deactivated_by_coupon'] == 1){
@@ -131,6 +138,17 @@ $total_macs    = mysqli_fetch_assoc(mysqli_query($link, "SELECT COUNT(*) as c FR
 $active_macs   = mysqli_fetch_assoc(mysqli_query($link, "SELECT COUNT(*) as c FROM map WHERE status='ACTIVE'"))['c'];
 $inactive_macs = $total_macs - $active_macs;
 $coupon_set    = mysqli_fetch_assoc(mysqli_query($link, "SELECT COUNT(*) as c FROM mac_coupons"))['c'];
+
+// History filter
+$hist_mac  = isset($_GET['hist_mac']) ? mysqli_real_escape_string($link, trim($_GET['hist_mac'])) : '';
+$hist_from = isset($_GET['hist_from']) && $_GET['hist_from'] ? mysqli_real_escape_string($link, $_GET['hist_from']) : date('Y-m-d', strtotime('-30 days'));
+$hist_to   = isset($_GET['hist_to'])   && $_GET['hist_to']   ? mysqli_real_escape_string($link, $_GET['hist_to'])   : date('Y-m-d');
+
+$hist_where = "WHERE log_date BETWEEN '$hist_from' AND '$hist_to'";
+if($hist_mac !== '') $hist_where .= " AND macid='$hist_mac'";
+
+$history_data = mysqli_query($link, "SELECT * FROM mac_coupon_logs $hist_where ORDER BY log_date DESC, id DESC LIMIT 200");
+$history_total = mysqli_fetch_assoc(mysqli_query($link, "SELECT COUNT(*) as c FROM mac_coupon_logs $hist_where"))['c'];
 
 // Main data: map LEFT JOIN mac_coupons + today's count
 $main_data = mysqli_query($link, "
@@ -349,5 +367,101 @@ $main_data = mysqli_query($link, "
 </div>
 </div>
 </div>
+
+<!-- ═══ HISTORY SECTION ═══ -->
+<div class="container-fluid mt-4">
+    <div class="card" style="border-radius:12px;">
+        <div class="card-header" style="background:linear-gradient(135deg,#2c3e50,#3498db);color:#fff;border-radius:12px 12px 0 0;">
+            <strong><i class="fa fa-history"></i> Coupon Khatam History</strong>
+            <span class="badge badge-light float-right mt-1"><?= $history_total ?> Records</span>
+        </div>
+        <div class="card-body">
+
+            <!-- Filter Form -->
+            <form method="GET" class="form-inline mb-3" style="gap:8px;flex-wrap:wrap;">
+                <div class="form-group mr-2 mb-2">
+                    <label class="mr-1"><b>MAC ID:</b></label>
+                    <select name="hist_mac" class="form-control form-control-sm" style="min-width:180px;">
+                        <option value="">-- Sabhi MAC IDs --</option>
+                        <?php
+                        mysqli_data_seek($all_macs, 0);
+                        while($hm = mysqli_fetch_assoc($all_macs)):
+                        ?>
+                            <option value="<?= htmlspecialchars($hm['macid']) ?>"
+                                <?= ($hist_mac === $hm['macid']) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($hm['name']) ?> — <?= htmlspecialchars($hm['macid']) ?>
+                            </option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
+                <div class="form-group mr-2 mb-2">
+                    <label class="mr-1"><b>From:</b></label>
+                    <input type="date" name="hist_from" class="form-control form-control-sm"
+                           value="<?= htmlspecialchars($hist_from) ?>">
+                </div>
+                <div class="form-group mr-2 mb-2">
+                    <label class="mr-1"><b>To:</b></label>
+                    <input type="date" name="hist_to" class="form-control form-control-sm"
+                           value="<?= htmlspecialchars($hist_to) ?>">
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm mb-2">
+                    <i class="fa fa-filter"></i> Filter
+                </button>
+                <a href="mac_coupon.php" class="btn btn-secondary btn-sm mb-2">
+                    <i class="fa fa-refresh"></i> Reset
+                </a>
+            </form>
+
+            <!-- History Table -->
+            <?php if($history_total == 0): ?>
+                <div class="alert alert-info mb-0">
+                    <i class="fa fa-info-circle"></i>
+                    Abhi tak koi coupon exhaust nahi hua is date range mein.
+                    Jab koi MAC ID ka coupon khatam hoga, yahan record aayega.
+                </div>
+            <?php else: ?>
+            <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover table-sm">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>Date</th>
+                        <th>MAC ID</th>
+                        <th>Name</th>
+                        <th class="text-center">Daily Limit</th>
+                        <th class="text-center">Used</th>
+                        <th class="text-center">Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php
+                $hi = 1;
+                while($hrow = mysqli_fetch_assoc($history_data)):
+                    $hdate = date('d-m-Y', strtotime($hrow['log_date']));
+                    $htime = date('H:i', strtotime($hrow['created_at']));
+                ?>
+                    <tr>
+                        <td><?= $hi++ ?></td>
+                        <td>
+                            <span class="badge badge-dark"><?= $hdate ?></span>
+                        </td>
+                        <td><small><?= htmlspecialchars($hrow['macid']) ?></small></td>
+                        <td><b><?= htmlspecialchars($hrow['mac_name']) ?></b></td>
+                        <td class="text-center"><b><?= (int)$hrow['daily_limit'] ?></b></td>
+                        <td class="text-center">
+                            <span class="badge badge-danger"><?= (int)$hrow['used_count'] ?></span>
+                        </td>
+                        <td class="text-center text-muted"><small><?= $htime ?></small></td>
+                    </tr>
+                <?php endwhile; ?>
+                </tbody>
+            </table>
+            </div>
+            <?php endif; ?>
+
+        </div>
+    </div>
+</div>
+<!-- ═══ END HISTORY ═══ -->
 
 <?php include('layout/footer.php'); ?>
