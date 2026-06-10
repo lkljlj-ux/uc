@@ -2,6 +2,11 @@
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: Origin, Content-Type, X-Auth-Token');
 
+if($_SERVER['REQUEST_METHOD'] !== 'POST'){
+    header("Location: login.php");
+    exit();
+}
+
 include('database.php');
 
 http_response_code(200);
