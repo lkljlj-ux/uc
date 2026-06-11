@@ -732,9 +732,8 @@ $hist_total = mysqli_num_rows($history_data);
 </div>
 <!-- ═══ END HISTORY ═══ -->
 
-<!-- Select2 for MAC ID dropdown search -->
+<!-- Select2 CSS (can load before jQuery) -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <style>
 .select2-container--default .select2-selection--single {
     height: 38px;
@@ -750,6 +749,11 @@ $hist_total = mysqli_num_rows($history_data);
 }
 .select2-container { width: 100% !important; }
 </style>
+
+<?php include('layout/footer.php'); ?>
+
+<!-- Select2 JS — must come after footer.php which loads jQuery -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 $(document).ready(function(){
     $('#sel_macid_select').select2({
@@ -759,5 +763,3 @@ $(document).ready(function(){
     });
 });
 </script>
-
-<?php include('layout/footer.php'); ?>
