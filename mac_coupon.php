@@ -247,15 +247,15 @@ $main_data = mysqli_query($link, "
 
 // History: last 30 days coupon exhaustion log
 $hist_mac_filter = isset($_GET['hist_mac']) ? mysqli_real_escape_string($link, trim($_GET['hist_mac'])) : '';
-$hist_where = $hist_mac_filter ? "WHERE l.macid='$hist_mac_filter'" : "WHERE l.exhausted_date >= CURDATE() - INTERVAL 30 DAY";
-if($hist_mac_filter) $hist_where .= " AND l.exhausted_date >= CURDATE() - INTERVAL 30 DAY";
+$hist_where = $hist_mac_filter ? "WHERE l.macid='$hist_mac_filter'" : "WHERE l.log_date >= CURDATE() - INTERVAL 30 DAY";
+if($hist_mac_filter) $hist_where .= " AND l.log_date >= CURDATE() - INTERVAL 30 DAY";
 
 $history_data = mysqli_query($link, "
-    SELECT l.id, l.macid, m.name, l.daily_limit, l.used_count, l.exhausted_date, l.created_at
+    SELECT l.id, l.macid, m.name, l.daily_limit, l.used_count, l.log_date, l.created_at
     FROM mac_coupon_logs l
     LEFT JOIN map m ON m.macid = l.macid
     $hist_where
-    ORDER BY l.exhausted_date DESC, l.created_at DESC
+    ORDER BY l.log_date DESC, l.created_at DESC
 ");
 
 // All MACs that appear in logs (for filter dropdown)
@@ -605,9 +605,9 @@ $hist_total = mysqli_num_rows($history_data);
                                 </td>
                                 <td class="text-center">
                                     <span class="badge badge-danger" style="font-size:13px;">
-                                        <?= date('d M Y', strtotime($hrow['exhausted_date'])) ?>
+                                        <?= date('d M Y', strtotime($hrow['log_date'])) ?>
                                     </span>
-                                    <br><small class="text-muted"><?= date('l', strtotime($hrow['exhausted_date'])) ?></small>
+                                    <br><small class="text-muted"><?= date('l', strtotime($hrow['log_date'])) ?></small>
                                 </td>
                                 <td class="text-center"><b><?= (int)$hrow['daily_limit'] ?></b></td>
                                 <td class="text-center">
