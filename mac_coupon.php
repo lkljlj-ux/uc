@@ -244,6 +244,23 @@ $main_data = mysqli_query($link, "
     ORDER BY mc.daily_limit DESC, m.name ASC
     LIMIT $per_page OFFSET $offset
 ");
+
+// History: last 30 days coupon exhaustion log
+$hist_mac_filter = isset($_GET['hist_mac']) ? mysqli_real_escape_string($link, trim($_GET['hist_mac'])) : '';
+$hist_where = $hist_mac_filter ? "WHERE l.macid='$hist_mac_filter'" : "WHERE l.exhausted_date >= CURDATE() - INTERVAL 30 DAY";
+if($hist_mac_filter) $hist_where .= " AND l.exhausted_date >= CURDATE() - INTERVAL 30 DAY";
+
+$history_data = mysqli_query($link, "
+    SELECT l.id, l.macid, m.name, l.daily_limit, l.used_count, l.exhausted_date, l.created_at
+    FROM mac_coupon_logs l
+    LEFT JOIN map m ON m.macid = l.macid
+    $hist_where
+    ORDER BY l.exhausted_date DESC, l.created_at DESC
+");
+
+// All MACs that appear in logs (for filter dropdown)
+$log_macs = mysqli_query($link, "SELECT DISTINCT l.macid, m.name FROM mac_coupon_logs l LEFT JOIN map m ON m.macid=l.macid ORDER BY m.name ASC, l.macid ASC");
+$hist_total = mysqli_num_rows($history_data);
 ?>
 
 <div class="content" style="min-height:610px;">
@@ -524,6 +541,97 @@ $main_data = mysqli_query($link, "
         </div>
 
     </div>
+
+    <!-- ─── History Section ─────────────────────────────────────────────────── -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card" style="border-radius:12px;">
+                <div class="card-header d-flex align-items-center justify-content-between flex-wrap"
+                     style="background:linear-gradient(135deg,#2c3e50,#4a6fa5);color:#fff;border-radius:12px 12px 0 0;">
+                    <span><i class="fa fa-history"></i> <strong>Coupon Exhaustion History</strong>
+                        <span class="badge badge-light ml-2"><?= $hist_total ?> records</span>
+                        <small class="ml-2 text-white-50">(Last 30 days)</small>
+                    </span>
+                    <!-- Per-MAC filter form -->
+                    <form method="GET" class="form-inline mt-1 mt-md-0" style="gap:6px;">
+                        <select name="hist_mac" class="form-control form-control-sm" style="min-width:180px;">
+                            <option value="">-- Sabhi MAC IDs --</option>
+                            <?php while($lm = mysqli_fetch_assoc($log_macs)): ?>
+                                <option value="<?= htmlspecialchars($lm['macid']) ?>"
+                                    <?= ($hist_mac_filter === $lm['macid']) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($lm['name'] ?: $lm['macid']) ?> — <?= htmlspecialchars($lm['macid']) ?>
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-light ml-1">
+                            <i class="fa fa-filter"></i> Filter
+                        </button>
+                        <?php if($hist_mac_filter): ?>
+                            <a href="mac_coupon.php" class="btn btn-sm btn-outline-light ml-1">
+                                <i class="fa fa-times"></i> Clear
+                            </a>
+                        <?php endif; ?>
+                    </form>
+                </div>
+                <div class="card-body p-0">
+                    <?php if($hist_total == 0): ?>
+                        <div class="text-center text-muted py-4">
+                            <i class="fa fa-inbox fa-2x mb-2"></i><br>
+                            Pichle 30 dinon mein koi coupon exhaust nahi hua.
+                        </div>
+                    <?php else: ?>
+                    <div class="table-responsive">
+                    <table class="table table-bordered table-hover table-sm mb-0">
+                        <thead style="background:#2c3e50;color:#fff;">
+                            <tr>
+                                <th>#</th>
+                                <th>MAC ID / Name</th>
+                                <th class="text-center">Tarikh (Khatam Hua)</th>
+                                <th class="text-center">Daily Limit</th>
+                                <th class="text-center">Uss Din Hua</th>
+                                <th class="text-center">Log Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php
+                        $hi = 1;
+                        while($hrow = mysqli_fetch_assoc($history_data)):
+                        ?>
+                            <tr>
+                                <td><?= $hi++ ?></td>
+                                <td>
+                                    <b><?= htmlspecialchars($hrow['name'] ?: '—') ?></b><br>
+                                    <small class="text-muted" style="font-size:11px;"><?= htmlspecialchars($hrow['macid']) ?></small>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge badge-danger" style="font-size:13px;">
+                                        <?= date('d M Y', strtotime($hrow['exhausted_date'])) ?>
+                                    </span>
+                                    <br><small class="text-muted"><?= date('l', strtotime($hrow['exhausted_date'])) ?></small>
+                                </td>
+                                <td class="text-center"><b><?= (int)$hrow['daily_limit'] ?></b></td>
+                                <td class="text-center">
+                                    <b class="text-danger"><?= (int)$hrow['used_count'] ?></b>
+                                    <div class="progress mt-1" style="height:5px;border-radius:4px;">
+                                        <?php $pct2 = $hrow['daily_limit'] > 0 ? min(100, round($hrow['used_count']/$hrow['daily_limit']*100)) : 100; ?>
+                                        <div class="progress-bar bg-danger" style="width:<?= $pct2 ?>%"></div>
+                                    </div>
+                                </td>
+                                <td class="text-center text-muted" style="font-size:12px;">
+                                    <?= date('d/m/y H:i', strtotime($hrow['created_at'])) ?>
+                                </td>
+                            </tr>
+                        <?php endwhile; ?>
+                        </tbody>
+                    </table>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ──────────────────────────────────────────────────────────────────────── -->
+
 </div>
 </div>
 </div>
