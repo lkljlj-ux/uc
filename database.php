@@ -1,4 +1,4 @@
 <?php
-$link=mysqli_connect('localhost','aadhaar_test','ftYI6.B#s2K&','aadhaar_test');
+$link=mysqli_connect('127.0.0.1','aadhaar_test','ftYI6.B#s2K&','aadhaar_test');
 mysqli_set_charset($link, 'utf8mb4'); 
 ?>
