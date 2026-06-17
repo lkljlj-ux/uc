@@ -6,3 +6,9 @@ id = "daFFAykUTiuYXPh0Bgthr"
 uri = "file://project_with_db.zip"
 type = "unspecified"
 title = "Updated ZIP - New Login UI"
+
+[[outputs]]
+id = "zCfG8NxV-nie8xeQtX6Bo"
+uri = "file://V1.zip"
+type = "unspecified"
+title = "V1.zip — Latest Project Code"
