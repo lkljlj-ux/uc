@@ -130,7 +130,11 @@ function loadData(fromDate, toDate) {
                 dtTable = $('#statusTable').DataTable({
                     pageLength: 25,
                     order: [[5, 'desc']],
-                    language: { search: "Search:" },
+                    language: {
+                        search: "Search:",
+                        emptyTable: "Koi data nahi mila",
+                        zeroRecords: "Filter mein koi record nahi mila"
+                    },
                     columnDefs: [{ targets: [1], className: 'text-center' }]
                 });
             }

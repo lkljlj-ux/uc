@@ -62,8 +62,6 @@ if ($data && $data->num_rows > 0) {
                 <td>{$dateFormatted}</td>
               </tr>";
     }
-} else {
-    echo "<tr><td colspan='6' style='text-align:center;'>No Data Found</td></tr>";
 }
 echo "</tbody></table>";
 $conn->close();
