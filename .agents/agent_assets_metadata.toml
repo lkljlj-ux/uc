@@ -54,3 +54,9 @@ id = "Xo0F5weEKyh3i0WHsWmRx"
 uri = "file://mac_all_files.zip"
 type = "unspecified"
 title = "mac_all_files.zip — Teeno Files (status.php + status_report.php + status_excel.php)"
+
+[[outputs]]
+id = "E3se8klX9baHXBjMnh9q9"
+uri = "file://database_live.zip"
+type = "unspecified"
+title = "database_live.zip — Live Server ka database.php"
