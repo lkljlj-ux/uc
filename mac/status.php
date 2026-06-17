@@ -103,7 +103,7 @@ if(!isset($_SESSION['user_token'])){
 var dtTable = null;
 
 function loadData(fromDate, toDate) {
-    let url = "mac/status_report.php";
+    let url = "status_report.php";
     if (fromDate && toDate) {
         url += "?from=" + fromDate + "&to=" + toDate;
     }

@@ -755,7 +755,7 @@ $hist_total = mysqli_num_rows($history_data);
 <!-- Select2 JS — must come after footer.php which loads jQuery -->
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
-$(document).ready(function(){
+jQuery(document).ready(function($){
     $('#sel_macid_select').select2({
         placeholder: '-- MAC ID chunein (search karein) --',
         allowClear: true,
