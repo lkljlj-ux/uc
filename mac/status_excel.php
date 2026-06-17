@@ -2,7 +2,7 @@
 session_start();
 include(__DIR__ . '/../database.php');
 if(!isset($_SESSION['user_token'])){
-    header("location:/login.php");
+    header("location:../login.php");
     exit();
 }
 

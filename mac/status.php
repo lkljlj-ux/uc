@@ -1,7 +1,7 @@
 <?php
 include('../layout/header.php');
 if(!isset($_SESSION['user_token'])){
-    header("location:/login.php");
+    header("location:../login.php");
     exit();
 }
 ?>
