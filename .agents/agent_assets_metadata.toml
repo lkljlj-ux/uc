@@ -30,3 +30,9 @@ id = "OMM9TLM9p69poC2RQW9XE"
 uri = "file://V1_complete.zip"
 type = "unspecified"
 title = "V1_complete.zip — Full Code + SQL"
+
+[[outputs]]
+id = "nQm49oXuj5QV7CUvsvWqI"
+uri = "file://mac_fix.zip"
+type = "unspecified"
+title = "mac_fix.zip — status.php + status_excel.php"
