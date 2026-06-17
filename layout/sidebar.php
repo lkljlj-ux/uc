@@ -41,13 +41,13 @@
                                                 <li class=" <?php if($page=='retailer.php'){ echo 'active';} ?>">
                                                         <a href="retailer.php"><i class="menu-icon fa fa-shopping-cart"></i> Retailer</a>
                                                 </li>
-                                                <li class=" <?php if($pages=='test2'){ echo 'active';} ?>">
+                                                <li class=" <?php if($page=='map.php'){ echo 'active';} ?>">
                                                         <a href="map.php"><i class="menu-icon fa fa-plus"></i> Map machine</a>
                                                 </li>
                                                 <li class=" <?php if($page=='mac_coupon.php'){ echo 'active';} ?>">
                                                         <a href="mac_coupon.php"><i class="menu-icon fa fa-ticket"></i> MAC Coupon</a>
                                                 </li>
-                                                <li class=" <?php if($pages=='status'){ echo 'active';} ?>">
+                                                <li class=" <?php if(strpos($page,'status.php')!==false){ echo 'active';} ?>">
                                                         <a href="mac/status.php"><i class="menu-icon fa fa-trash"></i> All Report</a>
                                                 </li>
                                                 <li class=" <?php if($page=='change_password.php'){ echo 'active';} ?>">

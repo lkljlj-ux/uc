@@ -1,6 +1,11 @@
 <?php
-$conn = new mysqli("localhost", "aadhaar_test", "ftYI6.B#s2K&", "aadhaar_test");
-if ($conn->connect_error) { die("DB Error"); }
+mysqli_report(MYSQLI_REPORT_OFF);
+$conn = new mysqli("127.0.0.1", "aadhaar_test", "ftYI6.B#s2K&", "aadhaar_test");
+if ($conn->connect_error) {
+    echo "<div id='cards-data'><div class='date-cards'><div class='date-card'><div class='date'>DB Error</div><div class='count'>—</div></div></div></div>";
+    echo "<table id='table-data' style='display:none'><tbody><tr><td colspan='5' style='text-align:center;'>Database connection failed. Please try again.</td></tr></tbody></table>";
+    exit();
+}
 
 $fromDate = isset($_GET['from']) ? $conn->real_escape_string($_GET['from']) : null;
 $toDate   = isset($_GET['to'])   ? $conn->real_escape_string($_GET['to'])   : null;

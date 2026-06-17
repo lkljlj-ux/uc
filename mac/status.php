@@ -150,7 +150,7 @@ function resetFilter() {
     document.getElementById("to_date").value   = "";
     clearInterval(autoRefresh);
     loadData();
-    autoRefresh = setInterval(loadData, 5000);
+    autoRefresh = setInterval(loadData, 30000);
 }
 
 function exportToExcel() {
@@ -166,7 +166,7 @@ function exportToExcel() {
 var autoRefresh;
 window.onload = function() {
     loadData();
-    autoRefresh = setInterval(loadData, 5000);
+    autoRefresh = setInterval(loadData, 30000);
 };
 </script>
 
