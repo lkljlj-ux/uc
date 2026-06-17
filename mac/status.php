@@ -9,6 +9,8 @@ if(!isset($_SESSION['user_token'])){
         <div class="content" style="min-height: 610px;">
             <div class="animated fadeIn">
 
+<link rel="stylesheet" href="assets/css/lib/datatable/dataTables.bootstrap.min.css">
+
 <style>
 .status-wrapper { padding: 15px; }
 .date-cards {
@@ -97,37 +99,42 @@ if(!isset($_SESSION['user_token'])){
     </div>
 
     <div style="margin-top:8px; font-size:12px; color:#64748b; text-align:right;">
-        &#128260; Auto refresh every 5 seconds &nbsp;|&nbsp; &#128994; Only matched MAC addresses shown
+        &#128260; Auto refresh every 30 seconds &nbsp;|&nbsp; &#128994; Only matched MAC addresses shown
     </div>
 </div>
 
+            </div><!-- .animated -->
+        </div><!-- /.content -->
+
+<?php include('../layout/footer.php'); ?>
+
+<!-- DataTables — loaded after jQuery (footer) -->
+<script src="assets/js/lib/data-table/datatables.min.js"></script>
+<script src="assets/js/lib/data-table/dataTables.bootstrap.min.js"></script>
+
 <script>
-var dtTable = null;
+var dtTable    = null;
+var autoRefresh;
 
 function loadData(fromDate, toDate) {
-    let url = "mac/status_report.php";
+    var url = "mac/status_report.php";
     if (fromDate && toDate) {
         url += "?from=" + fromDate + "&to=" + toDate;
     }
     fetch(url)
-        .then(res => res.text())
-        .then(html => {
-            const temp = document.createElement("div");
+        .then(function(res){ return res.text(); })
+        .then(function(html){
+            var temp = document.createElement("div");
             temp.innerHTML = html;
 
-            // Date cards
-            const cards = temp.querySelector("#cards-data");
+            var cards = temp.querySelector("#cards-data");
             if (cards) document.getElementById("summaryArea").innerHTML = cards.outerHTML;
 
-            // Table rows
-            const tableData = temp.querySelector("#table-data tbody");
+            var tableData = temp.querySelector("#table-data tbody");
             if (tableData) {
-                if (dtTable) {
-                    dtTable.destroy();
-                    dtTable = null;
-                }
+                if (dtTable) { dtTable.destroy(); dtTable = null; }
                 document.getElementById("liveData").innerHTML = tableData.innerHTML;
-                dtTable = $('#statusTable').DataTable({
+                dtTable = jQuery('#statusTable').DataTable({
                     pageLength: 25,
                     order: [[5, 'desc']],
                     language: {
@@ -139,12 +146,12 @@ function loadData(fromDate, toDate) {
                 });
             }
         })
-        .catch(err => console.error("Fetch error:", err));
+        .catch(function(err){ console.error("Fetch error:", err); });
 }
 
 function applyFilter() {
-    const from = document.getElementById("from_date").value;
-    const to   = document.getElementById("to_date").value;
+    var from = document.getElementById("from_date").value;
+    var to   = document.getElementById("to_date").value;
     if (!from || !to) { alert("Dono dates select karo!"); return; }
     if (from > to)    { alert("From date, To date se pehle honi chahiye!"); return; }
     clearInterval(autoRefresh);
@@ -160,28 +167,16 @@ function resetFilter() {
 }
 
 function exportToExcel() {
-    const from = document.getElementById("from_date").value;
-    const to   = document.getElementById("to_date").value;
-    let url = "mac/status_excel.php";
-    if (from && to) {
-        url += "?from=" + from + "&to=" + to;
-    }
+    var from = document.getElementById("from_date").value;
+    var to   = document.getElementById("to_date").value;
+    var url  = "mac/status_excel.php";
+    if (from && to) url += "?from=" + from + "&to=" + to;
     document.getElementById("excelLink").href = url;
     document.getElementById("excelLink").click();
 }
 
-var autoRefresh;
-window.onload = function() {
+jQuery(document).ready(function(){
     loadData();
     autoRefresh = setInterval(loadData, 30000);
-};
+});
 </script>
-
-            </div><!-- .animated -->
-        </div><!-- /.content -->
-
-<?php include('../layout/footer.php'); ?>
-<!-- DataTables for statusTable -->
-<link rel="stylesheet" href="assets/css/lib/datatable/dataTables.bootstrap.min.css">
-<script src="assets/js/lib/data-table/datatables.min.js"></script>
-<script src="assets/js/lib/data-table/dataTables.bootstrap.min.js"></script>

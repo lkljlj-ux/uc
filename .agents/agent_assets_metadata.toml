@@ -48,3 +48,9 @@ id = "2I_Y41u8HygDvFd8gwG70"
 uri = "file://status_report_fix2.zip"
 type = "unspecified"
 title = "status_report_fix2.zip — mac/status_report.php (fixed)"
+
+[[outputs]]
+id = "Xo0F5weEKyh3i0WHsWmRx"
+uri = "file://mac_all_files.zip"
+type = "unspecified"
+title = "mac_all_files.zip — Teeno Files (status.php + status_report.php + status_excel.php)"
