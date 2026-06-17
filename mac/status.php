@@ -1,9 +1,10 @@
 <?php
-include('../layout/header.php');
+session_start();
 if(!isset($_SESSION['user_token'])){
     header("location:../login.php");
     exit();
 }
+include('../layout/header.php');
 ?>
         <!-- Content -->
         <div class="content" style="min-height: 610px;">

@@ -60,3 +60,9 @@ id = "E3se8klX9baHXBjMnh9q9"
 uri = "file://database_live.zip"
 type = "unspecified"
 title = "database_live.zip — Live Server ka database.php"
+
+[[outputs]]
+id = "FSM-yRok73JHaX5bd2_XG"
+uri = "file://mac_final_fix.zip"
+type = "unspecified"
+title = "mac_final_fix.zip — Teeno Files Final Fix"
