@@ -40,7 +40,7 @@ $dateWhere = $hasFilter
     : "";
 
 $dataSql = "
-    SELECT s.user_id, s.user_count, s.macId, m.status, s.system_date
+    SELECT s.user_id, s.user_count, s.macId, m.name, m.status, s.system_date
     FROM system_name_data s
     INNER JOIN map m ON TRIM(UPPER(s.macId)) = TRIM(UPPER(m.macid))
     WHERE 1=1 $dateWhere
@@ -52,16 +52,18 @@ if ($data && $data->num_rows > 0) {
     while ($row = $data->fetch_assoc()) {
         $statusClass = ($row['status'] === 'ACTIVE') ? 'status-active' : 'status-inactive';
         $dateFormatted = date('d-m-Y', strtotime($row['system_date']));
+        $macName = htmlspecialchars($row['name'] ?? $row['macId']);
         echo "<tr class='match-row'>
                 <td>{$row['user_id']}</td>
                 <td><b>{$row['user_count']}</b></td>
                 <td class='mac'>{$row['macId']}</td>
+                <td>{$macName}</td>
                 <td class='{$statusClass}'>{$row['status']}</td>
                 <td>{$dateFormatted}</td>
               </tr>";
     }
 } else {
-    echo "<tr><td colspan='5' style='text-align:center;'>No Data Found</td></tr>";
+    echo "<tr><td colspan='6' style='text-align:center;'>No Data Found</td></tr>";
 }
 echo "</tbody></table>";
 $conn->close();

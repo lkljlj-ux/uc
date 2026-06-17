@@ -86,6 +86,7 @@ if(!isset($_SESSION['user_token'])){
                         <th>User ID</th>
                         <th>Count</th>
                         <th>MAC ID</th>
+                        <th>Name</th>
                         <th>Status</th>
                         <th>Date</th>
                     </tr>
@@ -128,7 +129,7 @@ function loadData(fromDate, toDate) {
                 document.getElementById("liveData").innerHTML = tableData.innerHTML;
                 dtTable = $('#statusTable').DataTable({
                     pageLength: 25,
-                    order: [[4, 'desc']],
+                    order: [[5, 'desc']],
                     language: { search: "Search:" },
                     columnDefs: [{ targets: [1], className: 'text-center' }]
                 });
