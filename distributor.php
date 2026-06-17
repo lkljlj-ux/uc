@@ -13,25 +13,22 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['distributor_name'])){
     $edit_id   = (int)($_POST['edit_id'] ?? 0);
     $name      = mysqli_real_escape_string($link, trim($_POST['distributor_name']));
     $mobile    = mysqli_real_escape_string($link, trim($_POST['mobile']));
-    $email     = mysqli_real_escape_string($link, trim($_POST['email']));
-    $address   = mysqli_real_escape_string($link, trim($_POST['address']));
     $city      = mysqli_real_escape_string($link, trim($_POST['city']));
     $state     = mysqli_real_escape_string($link, trim($_POST['state']));
-    $pincode   = mysqli_real_escape_string($link, trim($_POST['pincode']));
     $status    = ($_POST['status'] === 'active') ? 'active' : 'inactive';
 
     if($name === '' || $mobile === ''){
         $error = 'Distributor Name aur Mobile zaroori hain!';
     } else {
         if($edit_id > 0){
-            $q = "UPDATE distributors SET distributor_name='$name', mobile='$mobile', email='$email',
-                  address='$address', city='$city', state='$state', pincode='$pincode', status='$status'
+            $q = "UPDATE distributors SET distributor_name='$name', mobile='$mobile',
+                  city='$city', state='$state', status='$status'
                   WHERE id=$edit_id";
             mysqli_query($link, $q);
             $success = 'Distributor update ho gaya!';
         } else {
-            $q = "INSERT INTO distributors (distributor_name, mobile, email, address, city, state, pincode, status)
-                  VALUES ('$name','$mobile','$email','$address','$city','$state','$pincode','$status')";
+            $q = "INSERT INTO distributors (distributor_name, mobile, city, state, status)
+                  VALUES ('$name','$mobile','$city','$state','$status')";
             mysqli_query($link, $q);
             $success = 'Distributor add ho gaya!';
         }
@@ -111,17 +108,6 @@ $active  = mysqli_fetch_assoc(mysqli_query($link,"SELECT COUNT(*) as c FROM dist
                                    placeholder="Mobile number"
                                    value="<?= $edit_row ? htmlspecialchars($edit_row['mobile']) : '' ?>">
                         </div>
-                        <div class="form-group">
-                            <label><b>Email</b></label>
-                            <input type="email" name="email" class="form-control"
-                                   placeholder="Email address"
-                                   value="<?= $edit_row ? htmlspecialchars($edit_row['email']) : '' ?>">
-                        </div>
-                        <div class="form-group">
-                            <label><b>Address</b></label>
-                            <textarea name="address" class="form-control" rows="2"
-                                placeholder="Pura address"><?= $edit_row ? htmlspecialchars($edit_row['address']) : '' ?></textarea>
-                        </div>
                         <div class="form-row">
                             <div class="form-group col-6">
                                 <label><b>City</b></label>
@@ -136,20 +122,12 @@ $active  = mysqli_fetch_assoc(mysqli_query($link,"SELECT COUNT(*) as c FROM dist
                                        value="<?= $edit_row ? htmlspecialchars($edit_row['state']) : '' ?>">
                             </div>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group col-6">
-                                <label><b>Pincode</b></label>
-                                <input type="text" name="pincode" class="form-control" maxlength="6"
-                                       placeholder="Pincode"
-                                       value="<?= $edit_row ? htmlspecialchars($edit_row['pincode']) : '' ?>">
-                            </div>
-                            <div class="form-group col-6">
-                                <label><b>Status</b></label>
-                                <select name="status" class="form-control">
-                                    <option value="active" <?= ($edit_row && $edit_row['status']=='active') ? 'selected' : '' ?>>Active</option>
-                                    <option value="inactive" <?= ($edit_row && $edit_row['status']=='inactive') ? 'selected' : '' ?>>Inactive</option>
-                                </select>
-                            </div>
+                        <div class="form-group">
+                            <label><b>Status</b></label>
+                            <select name="status" class="form-control">
+                                <option value="active" <?= ($edit_row && $edit_row['status']=='active') ? 'selected' : '' ?>>Active</option>
+                                <option value="inactive" <?= ($edit_row && $edit_row['status']=='inactive') ? 'selected' : '' ?>>Inactive</option>
+                            </select>
                         </div>
                         <button type="submit" class="btn btn-<?= $edit_row ? 'warning' : 'success' ?> btn-block">
                             <i class="fa fa-<?= $edit_row ? 'save' : 'plus' ?>"></i>
@@ -189,8 +167,7 @@ $active  = mysqli_fetch_assoc(mysqli_query($link,"SELECT COUNT(*) as c FROM dist
                         ?>
                             <tr <?= ($edit_row && $edit_row['id']==$row['id']) ? 'class="table-warning"' : '' ?>>
                                 <td><?= $i++ ?></td>
-                                <td><b><?= htmlspecialchars($row['distributor_name']) ?></b><br>
-                                    <small class="text-muted"><?= htmlspecialchars($row['email']) ?></small></td>
+                                <td><b><?= htmlspecialchars($row['distributor_name']) ?></b></td>
                                 <td><?= htmlspecialchars($row['mobile']) ?></td>
                                 <td><?= htmlspecialchars($row['city']) ?><?= $row['state'] ? ', '.$row['state'] : '' ?></td>
                                 <td>
