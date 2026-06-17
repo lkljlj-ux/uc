@@ -12,3 +12,9 @@ id = "zCfG8NxV-nie8xeQtX6Bo"
 uri = "file://V1.zip"
 type = "unspecified"
 title = "V1.zip — Latest Project Code"
+
+[[outputs]]
+id = "4BOR14aKrFvXgLQRKAL8J"
+uri = "file://fixes.zip"
+type = "unspecified"
+title = "fixes.zip — 3 Updated Files"
