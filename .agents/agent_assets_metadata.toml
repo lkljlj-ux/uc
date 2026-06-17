@@ -66,3 +66,9 @@ id = "FSM-yRok73JHaX5bd2_XG"
 uri = "file://mac_final_fix.zip"
 type = "unspecified"
 title = "mac_final_fix.zip — Teeno Files Final Fix"
+
+[[outputs]]
+id = "4mmdBO5RyBLKJojUCw_dm"
+uri = "file://sidebar_fix.zip"
+type = "unspecified"
+title = "sidebar_fix.zip — layout/sidebar.php"
