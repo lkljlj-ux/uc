@@ -18,3 +18,9 @@ id = "4BOR14aKrFvXgLQRKAL8J"
 uri = "file://fixes.zip"
 type = "unspecified"
 title = "fixes.zip — 3 Updated Files"
+
+[[outputs]]
+id = "aShluSKIzJONnITKgoE1U"
+uri = "file://aadhaar_test_db.zip"
+type = "unspecified"
+title = "aadhaar_test_db.zip — MySQL Database Dump"
