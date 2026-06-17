@@ -103,7 +103,7 @@ if(!isset($_SESSION['user_token'])){
 var dtTable = null;
 
 function loadData(fromDate, toDate) {
-    let url = "status_report.php";
+    let url = "mac/status_report.php";
     if (fromDate && toDate) {
         url += "?from=" + fromDate + "&to=" + toDate;
     }
@@ -174,3 +174,7 @@ window.onload = function() {
         </div><!-- /.content -->
 
 <?php include('../layout/footer.php'); ?>
+<!-- DataTables for statusTable -->
+<link rel="stylesheet" href="assets/css/lib/datatable/dataTables.bootstrap.min.css">
+<script src="assets/js/lib/data-table/datatables.min.js"></script>
+<script src="assets/js/lib/data-table/dataTables.bootstrap.min.js"></script>
