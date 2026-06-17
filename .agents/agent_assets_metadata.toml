@@ -24,3 +24,9 @@ id = "aShluSKIzJONnITKgoE1U"
 uri = "file://aadhaar_test_db.zip"
 type = "unspecified"
 title = "aadhaar_test_db.zip — MySQL Database Dump"
+
+[[outputs]]
+id = "OMM9TLM9p69poC2RQW9XE"
+uri = "file://V1_complete.zip"
+type = "unspecified"
+title = "V1_complete.zip — Complete Code + SQL Database"
