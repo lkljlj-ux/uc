@@ -50,6 +50,7 @@ if(!isset($_SESSION['user_token'])){
     <div class="top-bar">
         <h4 style="margin:0;">Live Matched MAC Address Status</h4>
         <button class="download-btn" onclick="exportToExcel()">&#11015; Download Excel</button>
+        <a id="excelLink" href="mac/status_excel.php" target="_blank" style="display:none;"></a>
     </div>
 
     <!-- Date Filter -->
@@ -154,13 +155,14 @@ function resetFilter() {
 }
 
 function exportToExcel() {
-    let table = document.getElementById("statusTable");
-    let html = table.outerHTML.replace(/ /g, '%20');
-    let filename = 'mac_report_' + new Date().toISOString().slice(0,10) + '.xls';
-    let link = document.createElement("a");
-    link.href = 'data:application/vnd.ms-excel,' + html;
-    link.download = filename;
-    link.click();
+    const from = document.getElementById("from_date").value;
+    const to   = document.getElementById("to_date").value;
+    let url = "mac/status_excel.php";
+    if (from && to) {
+        url += "?from=" + from + "&to=" + to;
+    }
+    document.getElementById("excelLink").href = url;
+    document.getElementById("excelLink").click();
 }
 
 var autoRefresh;
