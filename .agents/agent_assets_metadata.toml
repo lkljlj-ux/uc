@@ -42,3 +42,9 @@ id = "y3azQssbqnaBZn26Vrt7B"
 uri = "file://status_report_fix.zip"
 type = "unspecified"
 title = "status_report_fix.zip — mac/status_report.php"
+
+[[outputs]]
+id = "2I_Y41u8HygDvFd8gwG70"
+uri = "file://status_report_fix2.zip"
+type = "unspecified"
+title = "status_report_fix2.zip — mac/status_report.php (fixed)"

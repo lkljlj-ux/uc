@@ -1,14 +1,9 @@
 <?php
 mysqli_report(MYSQLI_REPORT_OFF);
-$conn = new mysqli("127.0.0.1", "aadhaar_test", "ftYI6.B#s2K&", "aadhaar_test");
-if ($conn->connect_error) {
-    echo "<div id='cards-data'><div class='date-cards'><div class='date-card'><div class='date'>DB Error</div><div class='count'>—</div></div></div></div>";
-    echo "<table id='table-data' style='display:none'><tbody><tr><td colspan='5' style='text-align:center;'>Database connection failed. Please try again.</td></tr></tbody></table>";
-    exit();
-}
+include(__DIR__ . '/../database.php');
 
-$fromDate = isset($_GET['from']) ? $conn->real_escape_string($_GET['from']) : null;
-$toDate   = isset($_GET['to'])   ? $conn->real_escape_string($_GET['to'])   : null;
+$fromDate = isset($_GET['from']) ? mysqli_real_escape_string($link, $_GET['from']) : null;
+$toDate   = isset($_GET['to'])   ? mysqli_real_escape_string($link, $_GET['to'])   : null;
 $hasFilter = $fromDate && $toDate;
 
 // Date summary cards (last 7 days)
@@ -21,9 +16,9 @@ $summarySql = "
     ORDER BY s.system_date DESC
     LIMIT 7
 ";
-$summary = $conn->query($summarySql);
-if ($summary && $summary->num_rows > 0) {
-    while ($r = $summary->fetch_assoc()) {
+$summary = mysqli_query($link, $summarySql);
+if ($summary && mysqli_num_rows($summary) > 0) {
+    while ($r = mysqli_fetch_assoc($summary)) {
         echo "<div class='date-card'>
                 <div class='date'>" . date('d-m-Y', strtotime($r['system_date'])) . "</div>
                 <div class='count'>{$r['total_count']}</div>
@@ -34,7 +29,7 @@ if ($summary && $summary->num_rows > 0) {
 }
 echo "</div></div>";
 
-// Main table rows — user_id, user_count, macId, status, system_date
+// Main table rows
 $dateWhere = $hasFilter
     ? "AND s.system_date BETWEEN '$fromDate' AND '$toDate'"
     : "";
@@ -46,13 +41,13 @@ $dataSql = "
     WHERE 1=1 $dateWhere
     ORDER BY s.system_date DESC
 ";
-$data = $conn->query($dataSql);
+$data = mysqli_query($link, $dataSql);
 echo "<table id='table-data' style='display:none'><tbody>";
-if ($data && $data->num_rows > 0) {
-    while ($row = $data->fetch_assoc()) {
-        $statusClass = ($row['status'] === 'ACTIVE') ? 'status-active' : 'status-inactive';
+if ($data && mysqli_num_rows($data) > 0) {
+    while ($row = mysqli_fetch_assoc($data)) {
+        $statusClass   = ($row['status'] === 'ACTIVE') ? 'status-active' : 'status-inactive';
         $dateFormatted = date('d-m-Y', strtotime($row['system_date']));
-        $macName = htmlspecialchars($row['name'] ?? $row['macId']);
+        $macName       = htmlspecialchars($row['name'] ?? $row['macId']);
         echo "<tr class='match-row'>
                 <td>{$row['user_id']}</td>
                 <td><b>{$row['user_count']}</b></td>
@@ -64,4 +59,3 @@ if ($data && $data->num_rows > 0) {
     }
 }
 echo "</tbody></table>";
-$conn->close();
