@@ -36,3 +36,9 @@ id = "nQm49oXuj5QV7CUvsvWqI"
 uri = "file://mac_fix.zip"
 type = "unspecified"
 title = "mac_fix.zip — status.php + status_excel.php"
+
+[[outputs]]
+id = "y3azQssbqnaBZn26Vrt7B"
+uri = "file://status_report_fix.zip"
+type = "unspecified"
+title = "status_report_fix.zip — mac/status_report.php"
