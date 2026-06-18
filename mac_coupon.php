@@ -189,17 +189,6 @@ $active_macs   = mysqli_fetch_assoc(mysqli_query($link, "SELECT COUNT(*) as c FR
 $inactive_macs = $total_macs - $active_macs;
 $coupon_set    = mysqli_fetch_assoc(mysqli_query($link, "SELECT COUNT(*) as c FROM mac_coupons"))['c'];
 
-// History filter
-$hist_mac  = isset($_GET['hist_mac']) ? mysqli_real_escape_string($link, trim($_GET['hist_mac'])) : '';
-$hist_from = isset($_GET['hist_from']) && $_GET['hist_from'] ? mysqli_real_escape_string($link, $_GET['hist_from']) : date('Y-m-d', strtotime('-30 days'));
-$hist_to   = isset($_GET['hist_to'])   && $_GET['hist_to']   ? mysqli_real_escape_string($link, $_GET['hist_to'])   : date('Y-m-d');
-
-$hist_where = "WHERE log_date BETWEEN '$hist_from' AND '$hist_to'";
-if($hist_mac !== '') $hist_where .= " AND macid='$hist_mac'";
-
-$history_data = mysqli_query($link, "SELECT * FROM mac_coupon_logs $hist_where ORDER BY log_date DESC, id DESC LIMIT 200");
-$history_total = mysqli_fetch_assoc(mysqli_query($link, "SELECT COUNT(*) as c FROM mac_coupon_logs $hist_where"))['c'];
-
 // Main table status filter
 $filter_status    = isset($_GET['filter_status'])    ? trim($_GET['filter_status'])    : '';
 $filter_date_from = (isset($_GET['filter_date_from']) && $_GET['filter_date_from']) ? $_GET['filter_date_from'] : date('Y-m-d');
@@ -245,22 +234,6 @@ $main_data = mysqli_query($link, "
     LIMIT $per_page OFFSET $offset
 ");
 
-// History: last 30 days coupon exhaustion log
-$hist_mac_filter = isset($_GET['hist_mac']) ? mysqli_real_escape_string($link, trim($_GET['hist_mac'])) : '';
-$hist_where = $hist_mac_filter ? "WHERE l.macid='$hist_mac_filter'" : "WHERE l.log_date >= CURDATE() - INTERVAL 30 DAY";
-if($hist_mac_filter) $hist_where .= " AND l.log_date >= CURDATE() - INTERVAL 30 DAY";
-
-$history_data = mysqli_query($link, "
-    SELECT l.id, l.macid, m.name, l.daily_limit, l.used_count, l.log_date, l.created_at
-    FROM mac_coupon_logs l
-    LEFT JOIN map m ON m.macid = l.macid
-    $hist_where
-    ORDER BY l.log_date DESC, l.created_at DESC
-");
-
-// All MACs that appear in logs (for filter dropdown)
-$log_macs = mysqli_query($link, "SELECT DISTINCT l.macid, m.name FROM mac_coupon_logs l LEFT JOIN map m ON m.macid=l.macid ORDER BY m.name ASC, l.macid ASC");
-$hist_total = mysqli_num_rows($history_data);
 ?>
 
 <div class="content" style="min-height:610px;">
@@ -542,195 +515,11 @@ $hist_total = mysqli_num_rows($history_data);
 
     </div>
 
-    <!-- ─── History Section ─────────────────────────────────────────────────── -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card" style="border-radius:12px;">
-                <div class="card-header d-flex align-items-center justify-content-between flex-wrap"
-                     style="background:linear-gradient(135deg,#2c3e50,#4a6fa5);color:#fff;border-radius:12px 12px 0 0;">
-                    <span><i class="fa fa-history"></i> <strong>Coupon Exhaustion History</strong>
-                        <span class="badge badge-light ml-2"><?= $hist_total ?> records</span>
-                        <small class="ml-2 text-white-50">(Last 30 days)</small>
-                    </span>
-                    <!-- Per-MAC filter form -->
-                    <form method="GET" class="form-inline mt-1 mt-md-0" style="gap:6px;">
-                        <select name="hist_mac" class="form-control form-control-sm" style="min-width:180px;">
-                            <option value="">-- Sabhi MAC IDs --</option>
-                            <?php while($lm = mysqli_fetch_assoc($log_macs)): ?>
-                                <option value="<?= htmlspecialchars($lm['macid']) ?>"
-                                    <?= ($hist_mac_filter === $lm['macid']) ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($lm['name'] ?: $lm['macid']) ?> — <?= htmlspecialchars($lm['macid']) ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
-                        <button type="submit" class="btn btn-sm btn-light ml-1">
-                            <i class="fa fa-filter"></i> Filter
-                        </button>
-                        <?php if($hist_mac_filter): ?>
-                            <a href="mac_coupon.php" class="btn btn-sm btn-outline-light ml-1">
-                                <i class="fa fa-times"></i> Clear
-                            </a>
-                        <?php endif; ?>
-                    </form>
-                </div>
-                <div class="card-body p-0">
-                    <?php if($hist_total == 0): ?>
-                        <div class="text-center text-muted py-4">
-                            <i class="fa fa-inbox fa-2x mb-2"></i><br>
-                            Pichle 30 dinon mein koi coupon exhaust nahi hua.
-                        </div>
-                    <?php else: ?>
-                    <div class="table-responsive">
-                    <table class="table table-bordered table-hover table-sm mb-0">
-                        <thead style="background:#2c3e50;color:#fff;">
-                            <tr>
-                                <th>#</th>
-                                <th>MAC ID / Name</th>
-                                <th class="text-center">Tarikh (Khatam Hua)</th>
-                                <th class="text-center">Daily Limit</th>
-                                <th class="text-center">Uss Din Hua</th>
-                                <th class="text-center">Log Time</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        <?php
-                        $hi = 1;
-                        while($hrow = mysqli_fetch_assoc($history_data)):
-                        ?>
-                            <tr>
-                                <td><?= $hi++ ?></td>
-                                <td>
-                                    <b><?= htmlspecialchars($hrow['name'] ?: '—') ?></b><br>
-                                    <small class="text-muted" style="font-size:11px;"><?= htmlspecialchars($hrow['macid']) ?></small>
-                                </td>
-                                <td class="text-center">
-                                    <span class="badge badge-danger" style="font-size:13px;">
-                                        <?= date('d M Y', strtotime($hrow['log_date'])) ?>
-                                    </span>
-                                    <br><small class="text-muted"><?= date('l', strtotime($hrow['log_date'])) ?></small>
-                                </td>
-                                <td class="text-center"><b><?= (int)$hrow['daily_limit'] ?></b></td>
-                                <td class="text-center">
-                                    <b class="text-danger"><?= (int)$hrow['used_count'] ?></b>
-                                    <div class="progress mt-1" style="height:5px;border-radius:4px;">
-                                        <?php $pct2 = $hrow['daily_limit'] > 0 ? min(100, round($hrow['used_count']/$hrow['daily_limit']*100)) : 100; ?>
-                                        <div class="progress-bar bg-danger" style="width:<?= $pct2 ?>%"></div>
-                                    </div>
-                                </td>
-                                <td class="text-center text-muted" style="font-size:12px;">
-                                    <?= date('d/m/y H:i', strtotime($hrow['created_at'])) ?>
-                                </td>
-                            </tr>
-                        <?php endwhile; ?>
-                        </tbody>
-                    </table>
-                    </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- ──────────────────────────────────────────────────────────────────────── -->
 
 </div>
 </div>
 </div>
 
-<!-- ═══ HISTORY SECTION ═══ -->
-<div class="container-fluid mt-4">
-    <div class="card" style="border-radius:12px;">
-        <div class="card-header" style="background:linear-gradient(135deg,#2c3e50,#3498db);color:#fff;border-radius:12px 12px 0 0;">
-            <strong><i class="fa fa-history"></i> Coupon Khatam History</strong>
-            <span class="badge badge-light float-right mt-1"><?= $history_total ?> Records</span>
-        </div>
-        <div class="card-body">
-
-            <!-- Filter Form -->
-            <form method="GET" class="form-inline mb-3" style="gap:8px;flex-wrap:wrap;">
-                <div class="form-group mr-2 mb-2">
-                    <label class="mr-1"><b>MAC ID:</b></label>
-                    <select name="hist_mac" class="form-control form-control-sm" style="min-width:180px;">
-                        <option value="">-- Sabhi MAC IDs --</option>
-                        <?php
-                        mysqli_data_seek($all_macs, 0);
-                        while($hm = mysqli_fetch_assoc($all_macs)):
-                        ?>
-                            <option value="<?= htmlspecialchars($hm['macid']) ?>"
-                                <?= ($hist_mac === $hm['macid']) ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($hm['name']) ?> — <?= htmlspecialchars($hm['macid']) ?>
-                            </option>
-                        <?php endwhile; ?>
-                    </select>
-                </div>
-                <div class="form-group mr-2 mb-2">
-                    <label class="mr-1"><b>From:</b></label>
-                    <input type="date" name="hist_from" class="form-control form-control-sm"
-                           value="<?= htmlspecialchars($hist_from) ?>">
-                </div>
-                <div class="form-group mr-2 mb-2">
-                    <label class="mr-1"><b>To:</b></label>
-                    <input type="date" name="hist_to" class="form-control form-control-sm"
-                           value="<?= htmlspecialchars($hist_to) ?>">
-                </div>
-                <button type="submit" class="btn btn-primary btn-sm mb-2">
-                    <i class="fa fa-filter"></i> Filter
-                </button>
-                <a href="mac_coupon.php" class="btn btn-secondary btn-sm mb-2">
-                    <i class="fa fa-refresh"></i> Reset
-                </a>
-            </form>
-
-            <!-- History Table -->
-            <?php if($history_total == 0): ?>
-                <div class="alert alert-info mb-0">
-                    <i class="fa fa-info-circle"></i>
-                    Abhi tak koi coupon exhaust nahi hua is date range mein.
-                    Jab koi MAC ID ka coupon khatam hoga, yahan record aayega.
-                </div>
-            <?php else: ?>
-            <div class="table-responsive">
-            <table class="table table-bordered table-striped table-hover table-sm">
-                <thead class="thead-dark">
-                    <tr>
-                        <th>#</th>
-                        <th>Date</th>
-                        <th>MAC ID</th>
-                        <th>Name</th>
-                        <th class="text-center">Daily Limit</th>
-                        <th class="text-center">Used</th>
-                        <th class="text-center">Time</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php
-                $hi = 1;
-                while($hrow = mysqli_fetch_assoc($history_data)):
-                    $hdate = date('d-m-Y', strtotime($hrow['log_date']));
-                    $htime = date('H:i', strtotime($hrow['created_at']));
-                ?>
-                    <tr>
-                        <td><?= $hi++ ?></td>
-                        <td>
-                            <span class="badge badge-dark"><?= $hdate ?></span>
-                        </td>
-                        <td><small><?= htmlspecialchars($hrow['macid']) ?></small></td>
-                        <td><b><?= htmlspecialchars($hrow['mac_name']) ?></b></td>
-                        <td class="text-center"><b><?= (int)$hrow['daily_limit'] ?></b></td>
-                        <td class="text-center">
-                            <span class="badge badge-danger"><?= (int)$hrow['used_count'] ?></span>
-                        </td>
-                        <td class="text-center text-muted"><small><?= $htime ?></small></td>
-                    </tr>
-                <?php endwhile; ?>
-                </tbody>
-            </table>
-            </div>
-            <?php endif; ?>
-
-        </div>
-    </div>
-</div>
-<!-- ═══ END HISTORY ═══ -->
 
 <!-- Select2 CSS (can load before jQuery) -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
