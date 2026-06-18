@@ -72,3 +72,9 @@ id = "4mmdBO5RyBLKJojUCw_dm"
 uri = "file://sidebar_fix.zip"
 type = "unspecified"
 title = "sidebar_fix.zip — layout/sidebar.php"
+
+[[outputs]]
+id = "U5ZGJZAydVFxRCnle74oX"
+uri = "file://vps_all_report_fix.zip"
+type = "unspecified"
+title = "vps_all_report_fix.zip — VPS Fix (4 files)"

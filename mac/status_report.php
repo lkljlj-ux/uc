@@ -1,6 +1,13 @@
 <?php
 mysqli_report(MYSQLI_REPORT_OFF);
+if(session_status() == PHP_SESSION_NONE) session_start();
 include(__DIR__ . '/../database.php');
+
+if (!$link || mysqli_connect_errno()) {
+    echo "<div id='cards-data'><div class='date-cards'><div class='date-card'><div class='date' style='color:red'>DB Error</div><div class='count'>!</div></div></div></div>";
+    echo "<table id='table-data' style='display:none'><tbody></tbody></table>";
+    exit();
+}
 
 $fromDate = isset($_GET['from']) ? mysqli_real_escape_string($link, $_GET['from']) : null;
 $toDate   = isset($_GET['to'])   ? mysqli_real_escape_string($link, $_GET['to'])   : null;
