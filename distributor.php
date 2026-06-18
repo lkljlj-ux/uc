@@ -351,9 +351,11 @@ $active  = mysqli_fetch_assoc(mysqli_query($link,"SELECT COUNT(*) as c FROM dist
                                         <span class="badge badge-light ml-1"><?= $mac_count ?></span>
                                     </a>
                                     <button type="button"
-                                            class="btn btn-purple btn-sm mb-1"
+                                            class="btn btn-sm mb-1"
                                             style="background:#8e44ad;border-color:#8e44ad;color:#fff;"
                                             title="Services Assign Karo"
+                                            data-toggle="modal"
+                                            data-target="#servicesModal"
                                             onclick="openServicesModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['distributor_name'])) ?>', '<?= htmlspecialchars($row['services'] ?? '') ?>')">
                                         <i class="fa fa-cubes"></i>
                                         <span class="badge badge-light ml-1"><?= $svc_count ?></span>
@@ -513,7 +515,6 @@ function openServicesModal(id, name, currentServices) {
         var el = document.getElementById('svc_' + k);
         if(el) el.checked = svcs.indexOf(k) !== -1;
     });
-    $('#servicesModal').modal('show');
 }
 
 function openResetModal(id, name) {
