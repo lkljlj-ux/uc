@@ -60,9 +60,9 @@ if(isset($_GET['excel'])){
             SELECT
                 m.macid, m.name, m.status,
                 mc.daily_limit, mc.deactivated_by_coupon,
-                (SELECT COUNT(*) FROM test t WHERE t.macid = TRIM(m.macid) AND DATE(t.created_at) = CURDATE()) as today_count
+                (SELECT COUNT(*) FROM test t WHERE LOWER(t.macid) = LOWER(TRIM(m.macid)) AND t.created_at >= CURDATE() AND t.created_at < CURDATE() + INTERVAL 1 DAY) as today_count
             FROM map m
-            LEFT JOIN mac_coupons mc ON TRIM(m.macid) = mc.macid
+            LEFT JOIN mac_coupons mc ON LOWER(TRIM(m.macid)) = LOWER(mc.macid)
             $xwhere
             ORDER BY mc.daily_limit DESC, m.name ASC
         ");
@@ -105,7 +105,7 @@ while($cr = mysqli_fetch_assoc($coupon_rows)){
     $limit = (int)$cr['daily_limit'];
 
     // Aaj ka count from test table
-    $cnt_res = mysqli_query($link, "SELECT COUNT(*) as c FROM test WHERE macid='$mac' AND DATE(created_at)=CURDATE()");
+    $cnt_res = mysqli_query($link, "SELECT COUNT(*) as c FROM test WHERE LOWER(macid)=LOWER('$mac') AND created_at >= CURDATE() AND created_at < CURDATE() + INTERVAL 1 DAY");
     $today_count = (int)mysqli_fetch_assoc($cnt_res)['c'];
 
     // Current map status fetch karo — decision ke liye
@@ -224,7 +224,7 @@ $offset      = ($cur_page - 1) * $per_page;
 // Total count for pagination
 $total_count_res = mysqli_fetch_assoc(mysqli_query($link, "
     SELECT COUNT(*) as c FROM map m
-    LEFT JOIN mac_coupons mc ON TRIM(m.macid) = mc.macid
+    LEFT JOIN mac_coupons mc ON LOWER(TRIM(m.macid)) = LOWER(mc.macid)
     $main_where
 "));
 $total_filtered = (int)$total_count_res['c'];
@@ -237,9 +237,9 @@ $main_data = mysqli_query($link, "
     SELECT 
         m.id, m.name, m.macid, m.status,
         mc.daily_limit, mc.deactivated_by_coupon,
-        (SELECT COUNT(*) FROM test t WHERE t.macid = TRIM(m.macid) AND DATE(t.created_at) = CURDATE()) as today_count
+        (SELECT COUNT(*) FROM test t WHERE LOWER(t.macid) = LOWER(TRIM(m.macid)) AND t.created_at >= CURDATE() AND t.created_at < CURDATE() + INTERVAL 1 DAY) as today_count
     FROM map m
-    LEFT JOIN mac_coupons mc ON TRIM(m.macid) = mc.macid
+    LEFT JOIN mac_coupons mc ON LOWER(TRIM(m.macid)) = LOWER(mc.macid)
     $main_where
     ORDER BY mc.daily_limit DESC, m.name ASC
     LIMIT $per_page OFFSET $offset
