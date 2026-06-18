@@ -102,3 +102,9 @@ id = "S4FXK_MRRmQDkjYIua4gR"
 uri = "file://all_report_fix.zip"
 type = "unspecified"
 title = "all_report_fix.zip — 3 Files (Root Level Fix)"
+
+[[outputs]]
+id = "4Q-A3a00E8CrI1-cgongF"
+uri = "file://mac_coupon_download.zip"
+type = "unspecified"
+title = "mac_coupon.php (Coupon Limit Page)"
