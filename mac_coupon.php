@@ -60,7 +60,7 @@ if(isset($_GET['excel'])){
             SELECT
                 m.macid, m.name, m.status,
                 mc.daily_limit, mc.deactivated_by_coupon,
-                (SELECT COUNT(*) FROM test t WHERE LOWER(t.macid) = LOWER(TRIM(m.macid)) AND t.created_at >= CURDATE() AND t.created_at < CURDATE() + INTERVAL 1 DAY) as today_count
+                (SELECT COALESCE(SUM(s.user_count),0) FROM system_name_data s WHERE LOWER(TRIM(s.macId)) = LOWER(TRIM(m.macid)) AND s.system_date = CURDATE()) as today_count
             FROM map m
             LEFT JOIN mac_coupons mc ON LOWER(TRIM(m.macid)) = LOWER(mc.macid)
             $xwhere
@@ -104,8 +104,8 @@ while($cr = mysqli_fetch_assoc($coupon_rows)){
     $mac = mysqli_real_escape_string($link, $cr['macid']);
     $limit = (int)$cr['daily_limit'];
 
-    // Aaj ka count from test table
-    $cnt_res = mysqli_query($link, "SELECT COUNT(*) as c FROM test WHERE LOWER(macid)=LOWER('$mac') AND created_at >= CURDATE() AND created_at < CURDATE() + INTERVAL 1 DAY");
+    // Aaj ka count from system_name_data table
+    $cnt_res = mysqli_query($link, "SELECT COALESCE(SUM(user_count),0) as c FROM system_name_data WHERE LOWER(TRIM(macId))=LOWER('$mac') AND system_date=CURDATE()");
     $today_count = (int)mysqli_fetch_assoc($cnt_res)['c'];
 
     // Current map status fetch karo — decision ke liye
@@ -226,7 +226,7 @@ $main_data = mysqli_query($link, "
     SELECT 
         m.id, m.name, m.macid, m.status,
         mc.daily_limit, mc.deactivated_by_coupon,
-        (SELECT COUNT(*) FROM test t WHERE LOWER(t.macid) = LOWER(TRIM(m.macid)) AND t.created_at >= CURDATE() AND t.created_at < CURDATE() + INTERVAL 1 DAY) as today_count
+        (SELECT COALESCE(SUM(s.user_count),0) FROM system_name_data s WHERE LOWER(TRIM(s.macId)) = LOWER(TRIM(m.macid)) AND s.system_date = CURDATE()) as today_count
     FROM map m
     LEFT JOIN mac_coupons mc ON LOWER(TRIM(m.macid)) = LOWER(mc.macid)
     $main_where
