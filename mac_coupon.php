@@ -60,9 +60,9 @@ if(isset($_GET['excel'])){
             SELECT
                 m.macid, m.name, m.status,
                 mc.daily_limit, mc.deactivated_by_coupon,
-                (SELECT COUNT(*) FROM test t WHERE t.macid = m.macid AND DATE(t.created_at) = CURDATE()) as today_count
+                (SELECT COUNT(*) FROM test t WHERE t.macid = TRIM(m.macid) AND DATE(t.created_at) = CURDATE()) as today_count
             FROM map m
-            LEFT JOIN mac_coupons mc ON m.macid = mc.macid
+            LEFT JOIN mac_coupons mc ON TRIM(m.macid) = mc.macid
             $xwhere
             ORDER BY mc.daily_limit DESC, m.name ASC
         ");
@@ -109,17 +109,17 @@ while($cr = mysqli_fetch_assoc($coupon_rows)){
     $today_count = (int)mysqli_fetch_assoc($cnt_res)['c'];
 
     // Current map status fetch karo — decision ke liye
-    $map_now = mysqli_fetch_assoc(mysqli_query($link, "SELECT status FROM map WHERE macid='$mac'"));
+    $map_now = mysqli_fetch_assoc(mysqli_query($link, "SELECT status FROM map WHERE TRIM(macid)='$mac'"));
     $cur_status = $map_now ? $map_now['status'] : '';
 
     if($today_count >= $limit && $limit > 0){
         // Sirf tabhi act karo jab machine abhi ACTIVE hai (manually INACTIVE ko touch mat karo)
         if($cur_status === 'ACTIVE'){
             // ACTIVE → INACTIVE transition by coupon
-            mysqli_query($link, "UPDATE map SET status='INACTIVE' WHERE macid='$mac'");
+            mysqli_query($link, "UPDATE map SET status='INACTIVE' WHERE TRIM(macid)='$mac'");
             mysqli_query($link, "UPDATE mac_coupons SET deactivated_by_coupon=1 WHERE macid='$mac'");
             // Log entry — ek din mein sirf ek entry (INSERT IGNORE via unique key simulation)
-            $mac_name_r = mysqli_fetch_assoc(mysqli_query($link, "SELECT name FROM map WHERE macid='$mac'"));
+            $mac_name_r = mysqli_fetch_assoc(mysqli_query($link, "SELECT name FROM map WHERE TRIM(macid)='$mac'"));
             $mac_name_e = mysqli_real_escape_string($link, $mac_name_r ? $mac_name_r['name'] : '');
             $log_chk = mysqli_query($link, "SELECT id FROM mac_coupon_logs WHERE macid='$mac' AND log_date=CURDATE()");
             if(mysqli_num_rows($log_chk) == 0){
@@ -129,7 +129,7 @@ while($cr = mysqli_fetch_assoc($coupon_rows)){
         // Agar pehle se INACTIVE hai (manually) → flag mat set karo, state preserve karo
     } elseif($today_count < $limit && $cr['deactivated_by_coupon'] == 1){
         // Coupon ne deactivate kiya tha, count ab limit se kam hai (naya din) → wapas ACTIVE
-        mysqli_query($link, "UPDATE map SET status='ACTIVE' WHERE macid='$mac'");
+        mysqli_query($link, "UPDATE map SET status='ACTIVE' WHERE TRIM(macid)='$mac'");
         mysqli_query($link, "UPDATE mac_coupons SET deactivated_by_coupon=0 WHERE macid='$mac'");
     }
 }
@@ -164,7 +164,7 @@ if(isset($_GET['remove'])){
     // Manually inactive machines ko touch mat karo
     $flag_res = mysqli_fetch_assoc(mysqli_query($link, "SELECT deactivated_by_coupon FROM mac_coupons WHERE macid='$rmac'"));
     if($flag_res && $flag_res['deactivated_by_coupon'] == 1){
-        mysqli_query($link, "UPDATE map SET status='ACTIVE' WHERE macid='$rmac'");
+        mysqli_query($link, "UPDATE map SET status='ACTIVE' WHERE TRIM(macid)='$rmac'");
     }
     mysqli_query($link, "DELETE FROM mac_coupons WHERE macid='$rmac'");
     header("location:mac_coupon.php");
@@ -224,7 +224,7 @@ $offset      = ($cur_page - 1) * $per_page;
 // Total count for pagination
 $total_count_res = mysqli_fetch_assoc(mysqli_query($link, "
     SELECT COUNT(*) as c FROM map m
-    LEFT JOIN mac_coupons mc ON m.macid = mc.macid
+    LEFT JOIN mac_coupons mc ON TRIM(m.macid) = mc.macid
     $main_where
 "));
 $total_filtered = (int)$total_count_res['c'];
@@ -237,9 +237,9 @@ $main_data = mysqli_query($link, "
     SELECT 
         m.id, m.name, m.macid, m.status,
         mc.daily_limit, mc.deactivated_by_coupon,
-        (SELECT COUNT(*) FROM test t WHERE t.macid = m.macid AND DATE(t.created_at) = CURDATE()) as today_count
+        (SELECT COUNT(*) FROM test t WHERE t.macid = TRIM(m.macid) AND DATE(t.created_at) = CURDATE()) as today_count
     FROM map m
-    LEFT JOIN mac_coupons mc ON m.macid = mc.macid
+    LEFT JOIN mac_coupons mc ON TRIM(m.macid) = mc.macid
     $main_where
     ORDER BY mc.daily_limit DESC, m.name ASC
     LIMIT $per_page OFFSET $offset
