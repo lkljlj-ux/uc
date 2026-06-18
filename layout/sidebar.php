@@ -35,8 +35,11 @@
                                                 <li class=" <?php if($page=='operator_xml_upload.php'){ echo 'active';} ?>">
                                                         <a href="operator_xml_upload.php"><i class="menu-icon fa fa-file-code-o"></i> XML Upload</a>
                                                 </li>
-                                                <li class=" <?php if($page=='distributor.php'){ echo 'active';} ?>">
+                                                <li class=" <?php if($page=='distributor.php' && !isset($_GET['list'])){ echo 'active';} ?>">
                                                         <a href="distributor.php"><i class="menu-icon fa fa-truck"></i> Distributor</a>
+                                                </li>
+                                                <li class=" <?php if($page=='distributor.php' && isset($_GET['list'])){ echo 'active';} ?>">
+                                                        <a href="distributor.php?list=1"><i class="menu-icon fa fa-list-ul"></i> Distributors List</a>
                                                 </li>
                                                 <li class=" <?php if($page=='distributor_login.php'){ echo 'active';} ?>">
                                                         <a href="distributor_login.php" target="_blank"><i class="menu-icon fa fa-sitemap"></i> Dist. Portal</a>

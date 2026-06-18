@@ -211,6 +211,119 @@ $active  = mysqli_fetch_assoc(mysqli_query($link,"SELECT COUNT(*) as c FROM dist
     </div>
     <?php endif; ?>
 
+    <?php if(isset($_GET['list'])): ?>
+    <!-- ── LIST-ONLY VIEW (?list=1) ── -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong><i class="fa fa-list-ul"></i> Distributors List</strong>
+                    <div>
+                        <span class="badge badge-primary mr-2"><?= $total ?> Total</span>
+                        <a href="distributor.php" class="btn btn-sm btn-success">
+                            <i class="fa fa-plus"></i> Add New
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <?php if($success): ?><div class="alert alert-success"><?= $success ?></div><?php endif; ?>
+                    <?php if($error): ?><div class="alert alert-danger"><?= htmlspecialchars($error) ?></div><?php endif; ?>
+                    <div class="table-responsive">
+                    <table class="table table-bordered table-striped table-hover" id="distListTable">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Mobile</th>
+                                <th>City / State</th>
+                                <th>Login</th>
+                                <th>MACs</th>
+                                <th>Services</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php
+                        $i = 1;
+                        mysqli_data_seek($records, 0);
+                        while($row = mysqli_fetch_assoc($records)):
+                            $mac_count = mysqli_fetch_assoc(mysqli_query($link,
+                                "SELECT COUNT(*) as c FROM distributor_macs WHERE distributor_id={$row['id']}"))['c'];
+                            $svc_arr   = !empty($row['services']) ? array_filter(explode(',', $row['services'])) : [];
+                            $svc_count = count($svc_arr);
+                        ?>
+                            <tr>
+                                <td><?= $i++ ?></td>
+                                <td><b><?= htmlspecialchars($row['distributor_name']) ?></b></td>
+                                <td><?= htmlspecialchars($row['mobile']) ?></td>
+                                <td><?= htmlspecialchars($row['city']) ?><?= $row['state'] ? ', '.$row['state'] : '' ?></td>
+                                <td>
+                                    <?php if(!empty($row['username'])): ?>
+                                        <span class="badge badge-success"><i class="fa fa-check"></i> Set</span>
+                                        <small class="text-muted d-block"><?= htmlspecialchars($row['username']) ?></small>
+                                    <?php else: ?>
+                                        <span class="badge badge-secondary">—</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge badge-<?= $mac_count > 0 ? 'info' : 'secondary' ?>"><?= $mac_count ?></span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge badge-<?= $svc_count > 0 ? 'warning' : 'secondary' ?>"><?= $svc_count ?></span>
+                                </td>
+                                <td>
+                                    <?php if($row['status']=='active'): ?>
+                                        <span class="badge badge-success">Active</span>
+                                    <?php else: ?>
+                                        <span class="badge badge-danger">Inactive</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td style="white-space:nowrap;">
+                                    <a href="distributor.php?assign=<?= $row['id'] ?>"
+                                       class="btn btn-info btn-sm mb-1" title="MACs Assign Karo">
+                                        <i class="fa fa-desktop"></i>
+                                    </a>
+                                    <button type="button"
+                                            class="btn btn-sm mb-1"
+                                            style="background:#8e44ad;border-color:#8e44ad;color:#fff;"
+                                            title="Services Assign Karo"
+                                            data-toggle="modal"
+                                            data-target="#servicesModal"
+                                            onclick="openServicesModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['distributor_name'])) ?>', '<?= htmlspecialchars($row['services'] ?? '') ?>')">
+                                        <i class="fa fa-cubes"></i>
+                                    </button>
+                                    <a href="distributor.php?edit=<?= $row['id'] ?>"
+                                       class="btn btn-warning btn-sm mb-1" title="Edit"><i class="fa fa-edit"></i></a>
+                                    <button type="button"
+                                            class="btn btn-secondary btn-sm mb-1"
+                                            title="Password Reset"
+                                            data-toggle="modal"
+                                            data-target="#resetPasswordModal"
+                                            onclick="openResetModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['distributor_name'])) ?>')">
+                                        <i class="fa fa-key"></i>
+                                    </button>
+                                    <a href="distributor.php?delete=<?= $row['id'] ?>&list=1"
+                                       class="btn btn-danger btn-sm mb-1"
+                                       onclick="return confirm('Delete karein? Assigned MACs bhi remove honge.')">
+                                        <i class="fa fa-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        <?php endwhile; ?>
+                        <?php if($total == 0): ?>
+                            <tr><td colspan="9" class="text-center text-muted">Koi distributor nahi hai abhi tak.</td></tr>
+                        <?php endif; ?>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <?php else: ?>
+    <!-- ── DEFAULT VIEW (Add form + list) ── -->
     <div class="row">
         <!-- Form -->
         <div class="col-lg-4">
@@ -365,6 +478,8 @@ $active  = mysqli_fetch_assoc(mysqli_query($link,"SELECT COUNT(*) as c FROM dist
                                     <button type="button"
                                             class="btn btn-secondary btn-sm mb-1"
                                             title="Password Reset Karo"
+                                            data-toggle="modal"
+                                            data-target="#resetPasswordModal"
                                             onclick="openResetModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['distributor_name'])) ?>')">
                                         <i class="fa fa-key"></i>
                                     </button>
@@ -386,6 +501,7 @@ $active  = mysqli_fetch_assoc(mysqli_query($link,"SELECT COUNT(*) as c FROM dist
             </div>
         </div>
     </div>
+    <?php endif; ?>
 
 </div>
 </div>
@@ -523,7 +639,6 @@ function openResetModal(id, name) {
     document.getElementById('newPassword').value = '';
     document.getElementById('confirmPassword').value = '';
     document.getElementById('pwMatchMsg').style.display = 'none';
-    $('#resetPasswordModal').modal('show');
 }
 
 function validateResetForm() {
