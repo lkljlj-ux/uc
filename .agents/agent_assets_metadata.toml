@@ -108,3 +108,9 @@ id = "4Q-A3a00E8CrI1-cgongF"
 uri = "file://mac_coupon_download.zip"
 type = "unspecified"
 title = "mac_coupon.php (Coupon Limit Page)"
+
+[[outputs]]
+id = "5t1V4JRgajz-_0b0F27u4"
+uri = "file://mac_coupon_final.zip"
+type = "unspecified"
+title = "mac_coupon.php — Live Upload"
