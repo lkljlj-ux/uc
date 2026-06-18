@@ -78,3 +78,9 @@ id = "U5ZGJZAydVFxRCnle74oX"
 uri = "file://vps_all_report_fix.zip"
 type = "unspecified"
 title = "vps_all_report_fix.zip — VPS Fix (4 files)"
+
+[[outputs]]
+id = "IFIn5iTQzB99wFuRGSrcA"
+uri = "file://mac_status_fix.zip"
+type = "unspecified"
+title = "mac_status_fix.zip — mac/status.php (Redirect Fix)"

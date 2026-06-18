@@ -1,7 +1,11 @@
 <?php
 session_start();
 if(!isset($_SESSION['user_token'])){
-    header("location:../login.php");
+    $proj = str_replace('\\','/',dirname(__DIR__));
+    $root = str_replace('\\','/',rtrim($_SERVER['DOCUMENT_ROOT'],'/'));
+    $base = rtrim(str_replace($root,'',$proj),'/').'/';
+    if($base===''||$base==='//'||$base==='//') $base='/';
+    header("location:".$base."login.php");
     exit();
 }
 include('../layout/header.php');
