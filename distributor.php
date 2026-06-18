@@ -69,6 +69,22 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['distributor_name'])){
     }
 }
 
+// ── Reset Password ─────────────────────────────────────────────────────────
+if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_password'])){
+    $rpid   = (int)$_POST['reset_dist_id'];
+    $newpw  = trim($_POST['new_password'] ?? '');
+    $confpw = trim($_POST['confirm_password'] ?? '');
+    if($newpw === ''){
+        $error = 'Naya password blank nahi ho sakta!';
+    } elseif($newpw !== $confpw){
+        $error = 'Dono passwords match nahi karte!';
+    } else {
+        $hashed = mysqli_real_escape_string($link, password_hash($newpw, PASSWORD_DEFAULT));
+        mysqli_query($link, "UPDATE distributors SET password='$hashed' WHERE id=$rpid");
+        $success = 'Password reset ho gaya!';
+    }
+}
+
 // ── Delete ─────────────────────────────────────────────────────────────────
 if(isset($_GET['delete'])){
     $del = (int)$_GET['delete'];
@@ -319,6 +335,12 @@ $active  = mysqli_fetch_assoc(mysqli_query($link,"SELECT COUNT(*) as c FROM dist
                                     </a>
                                     <a href="distributor.php?edit=<?= $row['id'] ?>"
                                        class="btn btn-warning btn-sm mb-1"><i class="fa fa-edit"></i></a>
+                                    <button type="button"
+                                            class="btn btn-secondary btn-sm mb-1"
+                                            title="Password Reset Karo"
+                                            onclick="openResetModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['distributor_name'])) ?>')">
+                                        <i class="fa fa-key"></i>
+                                    </button>
                                     <a href="distributor.php?delete=<?= $row['id'] ?>"
                                        class="btn btn-danger btn-sm mb-1"
                                        onclick="return confirm('Delete karein? Assigned MACs bhi remove honge.')">
@@ -341,5 +363,77 @@ $active  = mysqli_fetch_assoc(mysqli_query($link,"SELECT COUNT(*) as c FROM dist
 </div>
 </div>
 </div>
+
+<!-- ── Reset Password Modal ─────────────────────────────────────────────── -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" role="dialog" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title" id="resetPasswordModalLabel">
+                    <i class="fa fa-key"></i> Password Reset
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST" id="resetPasswordForm" onsubmit="return validateResetForm()">
+                <input type="hidden" name="reset_password" value="1">
+                <input type="hidden" name="reset_dist_id" id="resetDistId" value="">
+                <div class="modal-body">
+                    <p class="text-muted mb-3" style="font-size:13px;">
+                        <i class="fa fa-user"></i> <strong id="resetDistName"></strong> ka password reset ho jaayega.
+                    </p>
+                    <div class="form-group">
+                        <label><b>Naya Password *</b></label>
+                        <input type="password" name="new_password" id="newPassword" class="form-control" required placeholder="Naya password likho">
+                    </div>
+                    <div class="form-group">
+                        <label><b>Confirm Password *</b></label>
+                        <input type="password" name="confirm_password" id="confirmPassword" class="form-control" required placeholder="Dobara likho">
+                        <small id="pwMatchMsg" class="text-danger" style="display:none;">Passwords match nahi kar rahe!</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fa fa-key"></i> Reset Karo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openResetModal(id, name) {
+    document.getElementById('resetDistId').value = id;
+    document.getElementById('resetDistName').textContent = name;
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+    document.getElementById('pwMatchMsg').style.display = 'none';
+    $('#resetPasswordModal').modal('show');
+}
+
+function validateResetForm() {
+    var np = document.getElementById('newPassword').value;
+    var cp = document.getElementById('confirmPassword').value;
+    if (np !== cp) {
+        document.getElementById('pwMatchMsg').style.display = 'block';
+        return false;
+    }
+    document.getElementById('pwMatchMsg').style.display = 'none';
+    return true;
+}
+
+document.getElementById('confirmPassword').addEventListener('input', function() {
+    var np = document.getElementById('newPassword').value;
+    var msg = document.getElementById('pwMatchMsg');
+    if (this.value && this.value !== np) {
+        msg.style.display = 'block';
+    } else {
+        msg.style.display = 'none';
+    }
+});
+</script>
 
 <?php include('layout/footer.php'); ?>
