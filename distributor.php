@@ -40,7 +40,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['distributor_name'])){
     } else {
         if($edit_id > 0){
             if($uname !== '' && $rawpass !== ''){
-                $pass = md5($rawpass);
+                $pass = mysqli_real_escape_string($link, password_hash($rawpass, PASSWORD_DEFAULT));
                 $q = "UPDATE distributors SET distributor_name='$name', mobile='$mobile',
                       city='$city', state='$state', status='$status',
                       username='$uname', password='$pass' WHERE id=$edit_id";
@@ -56,7 +56,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['distributor_name'])){
             $success = 'Distributor update ho gaya!';
         } else {
             if($uname !== '' && $rawpass !== ''){
-                $pass = md5($rawpass);
+                $pass = mysqli_real_escape_string($link, password_hash($rawpass, PASSWORD_DEFAULT));
                 $q = "INSERT INTO distributors (distributor_name, mobile, city, state, status, username, password)
                       VALUES ('$name','$mobile','$city','$state','$status','$uname','$pass')";
             } else {

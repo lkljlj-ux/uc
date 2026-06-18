@@ -3,7 +3,7 @@
 --
 -- Host: localhost    Database: aadhaar_test
 -- ------------------------------------------------------
--- Server version	10.11.13-MariaDB
+-- Server version       10.11.13-MariaDB
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -91,7 +91,19 @@ CREATE TABLE `distributors` (
   `pincode` varchar(10) DEFAULT NULL,
   `status` enum('active','inactive') DEFAULT 'active',
   `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `username` varchar(100) DEFAULT NULL,
+  `password` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+DROP TABLE IF EXISTS `distributor_macs`;
+CREATE TABLE `distributor_macs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `distributor_id` int(11) NOT NULL,
+  `macid` varchar(100) NOT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_dist_mac` (`distributor_id`,`macid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

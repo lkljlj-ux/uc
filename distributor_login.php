@@ -10,20 +10,28 @@ $error = '';
 if(isset($_POST['login'])){
     include('database.php');
     $username = mysqli_real_escape_string($link, trim($_POST['username']));
-    $password = md5(trim($_POST['password']));
+    $rawpass  = trim($_POST['password']);
 
-    $q = "SELECT * FROM distributors WHERE username='$username' AND password='$password' AND status='active'";
+    $q = "SELECT * FROM distributors WHERE username='$username' AND status='active'";
     $res = mysqli_query($link, $q);
 
     if($res && mysqli_num_rows($res) > 0){
         $row = mysqli_fetch_assoc($res);
-        $_SESSION['dist_id']   = $row['id'];
-        $_SESSION['dist_name'] = $row['distributor_name'];
-        header("location:distributor_panel.php");
-        exit();
-    } else {
-        $error = 'Username ya Password galat hai, ya account inactive hai!';
+        $stored = $row['password'];
+        $valid = false;
+        if(strlen($stored) === 32 && ctype_xdigit($stored)){
+            $valid = (md5($rawpass) === $stored);
+        } else {
+            $valid = password_verify($rawpass, $stored);
+        }
+        if($valid){
+            $_SESSION['dist_id']   = $row['id'];
+            $_SESSION['dist_name'] = $row['distributor_name'];
+            header("location:distributor_panel.php");
+            exit();
+        }
     }
+    $error = 'Username ya Password galat hai, ya account inactive hai!';
 }
 ?>
 <!doctype html>
