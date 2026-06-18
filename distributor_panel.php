@@ -11,7 +11,16 @@ $dist_id   = (int)$_SESSION['dist_id'];
 $dist_name = htmlspecialchars($_SESSION['dist_name']);
 $today     = date('Y-m-d');
 
-$dist_row = mysqli_fetch_assoc(mysqli_query($link, "SELECT * FROM distributors WHERE id=$dist_id"));
+$dist_row  = mysqli_fetch_assoc(mysqli_query($link, "SELECT * FROM distributors WHERE id=$dist_id"));
+$svc_list  = !empty($dist_row['services']) ? explode(',', $dist_row['services']) : [];
+
+$all_services = [
+    'operator_add'  => ['label'=>'Operator Add',  'icon'=>'fa-user-plus',    'color'=>'#3498db'],
+    'xml_upload'    => ['label'=>'XML Upload',     'icon'=>'fa-file-code-o', 'color'=>'#27ae60'],
+    'map_machine'   => ['label'=>'Map Machine',    'icon'=>'fa-map-marker',  'color'=>'#f39c12'],
+    'mac_coupon'    => ['label'=>'MAC Coupon',     'icon'=>'fa-ticket',      'color'=>'#e74c3c'],
+    'all_report'    => ['label'=>'All Report',     'icon'=>'fa-bar-chart',   'color'=>'#1abc9c'],
+];
 
 $macs_q = mysqli_query($link, "
     SELECT m.name, m.macid, m.status,
@@ -200,6 +209,23 @@ while($r = mysqli_fetch_assoc($macs_q)){
             font-weight: 600;
         }
 
+        .svc-section { margin-top: 24px; }
+        .svc-card {
+            border-radius: 14px;
+            padding: 20px 16px;
+            text-align: center;
+            color: #fff;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .svc-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+        }
+        .svc-card i { font-size: 28px; margin-bottom: 8px; display: block; opacity: 0.9; }
+        .svc-card span { font-size: 13px; font-weight: 600; display: block; }
+
         @media(max-width: 576px){
             .top-bar { flex-direction: column; gap: 12px; text-align: center; }
             .main-content { padding: 16px; }
@@ -259,6 +285,30 @@ while($r = mysqli_fetch_assoc($macs_q)){
             </div>
         </div>
     </div>
+
+    <!-- Services Section -->
+    <?php if(!empty($svc_list)): ?>
+    <div class="svc-section">
+        <div class="card-panel mb-3">
+            <div class="cp-header">
+                <h5><i class="fa fa-cubes"></i> &nbsp;Aapki Assigned Services</h5>
+                <span class="badge" style="background:rgba(255,255,255,0.15);color:#fff;font-size:12px;"><?= count($svc_list) ?> Services</span>
+            </div>
+            <div class="cp-body" style="padding:20px;">
+                <div class="row">
+                <?php foreach($all_services as $key => $svc): if(!in_array($key, $svc_list)) continue; ?>
+                    <div class="col-6 col-md-2 col-sm-4">
+                        <div class="svc-card" style="background:<?= $svc['color'] ?>;">
+                            <i class="fa <?= $svc['icon'] ?>"></i>
+                            <span><?= $svc['label'] ?></span>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <!-- MAC Table -->
     <div class="card-panel">

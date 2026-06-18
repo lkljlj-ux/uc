@@ -8,6 +8,21 @@ if(!isset($_SESSION['user_token'])){
 $success = '';
 $error   = '';
 
+// ── Services Assignment (POST) ────────────────────────────────────────────
+if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assign_services'])){
+    $sid = (int)$_POST['services_dist_id'];
+    $allowed = ['operator_add','xml_upload','map_machine','mac_coupon','all_report'];
+    $selected = [];
+    if(!empty($_POST['services']) && is_array($_POST['services'])){
+        foreach($_POST['services'] as $sv){
+            if(in_array($sv, $allowed)) $selected[] = $sv;
+        }
+    }
+    $sval = mysqli_real_escape_string($link, implode(',', $selected));
+    mysqli_query($link, "UPDATE distributors SET services='$sval' WHERE id=$sid");
+    $success = 'Services update ho gayi!';
+}
+
 // ── MAC Assignment (POST) ──────────────────────────────────────────────────
 if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assign_macs'])){
     $did = (int)$_POST['assign_dist_id'];
@@ -306,6 +321,8 @@ $active  = mysqli_fetch_assoc(mysqli_query($link,"SELECT COUNT(*) as c FROM dist
                         while($row = mysqli_fetch_assoc($records)):
                             $mac_count = mysqli_fetch_assoc(mysqli_query($link,
                                 "SELECT COUNT(*) as c FROM distributor_macs WHERE distributor_id={$row['id']}"))['c'];
+                        $svc_arr   = !empty($row['services']) ? explode(',', $row['services']) : [];
+                        $svc_count = count(array_filter($svc_arr));
                         ?>
                             <tr <?= ($edit_row && $edit_row['id']==$row['id']) ? 'class="table-warning"' : '' ?>>
                                 <td><?= $i++ ?></td>
@@ -333,6 +350,14 @@ $active  = mysqli_fetch_assoc(mysqli_query($link,"SELECT COUNT(*) as c FROM dist
                                         <i class="fa fa-desktop"></i>
                                         <span class="badge badge-light ml-1"><?= $mac_count ?></span>
                                     </a>
+                                    <button type="button"
+                                            class="btn btn-purple btn-sm mb-1"
+                                            style="background:#8e44ad;border-color:#8e44ad;color:#fff;"
+                                            title="Services Assign Karo"
+                                            onclick="openServicesModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['distributor_name'])) ?>', '<?= htmlspecialchars($row['services'] ?? '') ?>')">
+                                        <i class="fa fa-cubes"></i>
+                                        <span class="badge badge-light ml-1"><?= $svc_count ?></span>
+                                    </button>
                                     <a href="distributor.php?edit=<?= $row['id'] ?>"
                                        class="btn btn-warning btn-sm mb-1"><i class="fa fa-edit"></i></a>
                                     <button type="button"
@@ -362,6 +387,80 @@ $active  = mysqli_fetch_assoc(mysqli_query($link,"SELECT COUNT(*) as c FROM dist
 
 </div>
 </div>
+</div>
+
+<!-- ── Services Modal ───────────────────────────────────────────────────── -->
+<div class="modal fade" id="servicesModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header text-white" style="background:#8e44ad;">
+                <h5 class="modal-title"><i class="fa fa-cubes"></i> Services Assign Karo</h5>
+                <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <form method="POST" id="servicesForm">
+                <input type="hidden" name="assign_services" value="1">
+                <input type="hidden" name="services_dist_id" id="svcDistId" value="">
+                <div class="modal-body">
+                    <p class="text-muted mb-3" style="font-size:13px;">
+                        <i class="fa fa-user"></i> <strong id="svcDistName"></strong> ko kaunsi services milegi:
+                    </p>
+                    <div class="row">
+                        <div class="col-sm-6 mb-3">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="svc_operator_add" name="services[]" value="operator_add">
+                                <label class="custom-control-label" for="svc_operator_add">
+                                    <i class="fa fa-user-plus text-primary"></i> <strong>Operator Add</strong>
+                                    <small class="d-block text-muted">Naye operators add kar sake</small>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 mb-3">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="svc_xml_upload" name="services[]" value="xml_upload">
+                                <label class="custom-control-label" for="svc_xml_upload">
+                                    <i class="fa fa-file-code-o text-success"></i> <strong>XML Upload</strong>
+                                    <small class="d-block text-muted">XML file upload kar sake</small>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 mb-3">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="svc_map_machine" name="services[]" value="map_machine">
+                                <label class="custom-control-label" for="svc_map_machine">
+                                    <i class="fa fa-map-marker text-warning"></i> <strong>Map Machine</strong>
+                                    <small class="d-block text-muted">MAC machine mapping dekhe</small>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 mb-3">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="svc_mac_coupon" name="services[]" value="mac_coupon">
+                                <label class="custom-control-label" for="svc_mac_coupon">
+                                    <i class="fa fa-ticket text-danger"></i> <strong>MAC Coupon</strong>
+                                    <small class="d-block text-muted">MAC coupon manage kare</small>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 mb-3">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="svc_all_report" name="services[]" value="all_report">
+                                <label class="custom-control-label" for="svc_all_report">
+                                    <i class="fa fa-bar-chart text-info"></i> <strong>All Report</strong>
+                                    <small class="d-block text-muted">Registration report dekhe</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn text-white" style="background:#8e44ad;">
+                        <i class="fa fa-save"></i> Save Karo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <!-- ── Reset Password Modal ─────────────────────────────────────────────── -->
@@ -405,6 +504,18 @@ $active  = mysqli_fetch_assoc(mysqli_query($link,"SELECT COUNT(*) as c FROM dist
 </div>
 
 <script>
+function openServicesModal(id, name, currentServices) {
+    document.getElementById('svcDistId').value = id;
+    document.getElementById('svcDistName').textContent = name;
+    var svcs = currentServices ? currentServices.split(',') : [];
+    var all = ['operator_add','xml_upload','map_machine','mac_coupon','all_report'];
+    all.forEach(function(k){
+        var el = document.getElementById('svc_' + k);
+        if(el) el.checked = svcs.indexOf(k) !== -1;
+    });
+    $('#servicesModal').modal('show');
+}
+
 function openResetModal(id, name) {
     document.getElementById('resetDistId').value = id;
     document.getElementById('resetDistName').textContent = name;
