@@ -96,3 +96,9 @@ id = "6JQeYkyu9lCqUEjV6KKeZ"
 uri = "file://mac_diag.zip"
 type = "unspecified"
 title = "mac_diag.zip — Updated Diagnostic (No 500 Error)"
+
+[[outputs]]
+id = "S4FXK_MRRmQDkjYIua4gR"
+uri = "file://all_report_fix.zip"
+type = "unspecified"
+title = "all_report_fix.zip — 3 Files (Root Level Fix)"

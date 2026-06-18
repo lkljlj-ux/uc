@@ -47,8 +47,8 @@
                                                 <li class=" <?php if($page=='mac_coupon.php'){ echo 'active';} ?>">
                                                         <a href="mac_coupon.php"><i class="menu-icon fa fa-ticket"></i> MAC Coupon</a>
                                                 </li>
-                                                <li class=" <?php if(strpos($page,'status.php')!==false){ echo 'active';} ?>">
-                                                        <a href="mac/status.php"><i class="menu-icon fa fa-trash"></i> All Report</a>
+                                                <li class=" <?php if($page=='all_report.php'){ echo 'active';} ?>">
+                                                        <a href="all_report.php"><i class="menu-icon fa fa-list"></i> All Report</a>
                                                 </li>
                                                 <li class=" <?php if($page=='change_password.php'){ echo 'active';} ?>">
                                                         <a href="change_password.php"><i class="menu-icon fa fa-key"></i> Change Password</a>
