@@ -1,14 +1,9 @@
 <?php
-session_start();
+include('../layout/header.php');
 if(!isset($_SESSION['user_token'])){
-    $proj = str_replace('\\','/',dirname(__DIR__));
-    $root = str_replace('\\','/',rtrim($_SERVER['DOCUMENT_ROOT'],'/'));
-    $base = rtrim(str_replace($root,'',$proj),'/').'/';
-    if($base===''||$base==='//'||$base==='//') $base='/';
-    header("location:".$base."login.php");
+    header("location:" . $basePath . "login.php");
     exit();
 }
-include('../layout/header.php');
 ?>
         <!-- Content -->
         <div class="content" style="min-height: 610px;">

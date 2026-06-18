@@ -84,3 +84,9 @@ id = "IFIn5iTQzB99wFuRGSrcA"
 uri = "file://mac_status_fix.zip"
 type = "unspecified"
 title = "mac_status_fix.zip — mac/status.php (Redirect Fix)"
+
+[[outputs]]
+id = "mZ_1bXrkn-ZJSnqzUMrrb"
+uri = "file://mac_status_v3.zip"
+type = "unspecified"
+title = "mac_status_v3.zip — mac/status.php (Final Fix)"
