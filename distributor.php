@@ -8,45 +8,93 @@ if(!isset($_SESSION['user_token'])){
 $success = '';
 $error   = '';
 
-// Add / Edit
+// ── MAC Assignment (POST) ──────────────────────────────────────────────────
+if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assign_macs'])){
+    $did = (int)$_POST['assign_dist_id'];
+    mysqli_query($link, "DELETE FROM distributor_macs WHERE distributor_id=$did");
+    if(!empty($_POST['macs']) && is_array($_POST['macs'])){
+        foreach($_POST['macs'] as $mac){
+            $mac = mysqli_real_escape_string($link, trim($mac));
+            if($mac !== ''){
+                mysqli_query($link, "INSERT IGNORE INTO distributor_macs (distributor_id, macid) VALUES ($did, '$mac')");
+            }
+        }
+    }
+    $success = 'MACs assign ho gayi!';
+    $show_assign = $did;
+}
+
+// ── Add / Edit Distributor ─────────────────────────────────────────────────
 if($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['distributor_name'])){
-    $edit_id   = (int)($_POST['edit_id'] ?? 0);
-    $name      = mysqli_real_escape_string($link, trim($_POST['distributor_name']));
-    $mobile    = mysqli_real_escape_string($link, trim($_POST['mobile']));
-    $city      = mysqli_real_escape_string($link, trim($_POST['city']));
-    $state     = mysqli_real_escape_string($link, trim($_POST['state']));
-    $status    = ($_POST['status'] === 'active') ? 'active' : 'inactive';
+    $edit_id  = (int)($_POST['edit_id'] ?? 0);
+    $name     = mysqli_real_escape_string($link, trim($_POST['distributor_name']));
+    $mobile   = mysqli_real_escape_string($link, trim($_POST['mobile']));
+    $city     = mysqli_real_escape_string($link, trim($_POST['city']));
+    $state    = mysqli_real_escape_string($link, trim($_POST['state']));
+    $status   = ($_POST['status'] === 'active') ? 'active' : 'inactive';
+    $uname    = mysqli_real_escape_string($link, trim($_POST['username'] ?? ''));
+    $rawpass  = trim($_POST['password'] ?? '');
 
     if($name === '' || $mobile === ''){
         $error = 'Distributor Name aur Mobile zaroori hain!';
     } else {
         if($edit_id > 0){
-            $q = "UPDATE distributors SET distributor_name='$name', mobile='$mobile',
-                  city='$city', state='$state', status='$status'
-                  WHERE id=$edit_id";
+            if($uname !== '' && $rawpass !== ''){
+                $pass = md5($rawpass);
+                $q = "UPDATE distributors SET distributor_name='$name', mobile='$mobile',
+                      city='$city', state='$state', status='$status',
+                      username='$uname', password='$pass' WHERE id=$edit_id";
+            } elseif($uname !== ''){
+                $q = "UPDATE distributors SET distributor_name='$name', mobile='$mobile',
+                      city='$city', state='$state', status='$status',
+                      username='$uname' WHERE id=$edit_id";
+            } else {
+                $q = "UPDATE distributors SET distributor_name='$name', mobile='$mobile',
+                      city='$city', state='$state', status='$status' WHERE id=$edit_id";
+            }
             mysqli_query($link, $q);
             $success = 'Distributor update ho gaya!';
         } else {
-            $q = "INSERT INTO distributors (distributor_name, mobile, city, state, status)
-                  VALUES ('$name','$mobile','$city','$state','$status')";
+            if($uname !== '' && $rawpass !== ''){
+                $pass = md5($rawpass);
+                $q = "INSERT INTO distributors (distributor_name, mobile, city, state, status, username, password)
+                      VALUES ('$name','$mobile','$city','$state','$status','$uname','$pass')";
+            } else {
+                $q = "INSERT INTO distributors (distributor_name, mobile, city, state, status)
+                      VALUES ('$name','$mobile','$city','$state','$status')";
+            }
             mysqli_query($link, $q);
             $success = 'Distributor add ho gaya!';
         }
     }
 }
 
-// Delete
+// ── Delete ─────────────────────────────────────────────────────────────────
 if(isset($_GET['delete'])){
     $del = (int)$_GET['delete'];
+    mysqli_query($link, "DELETE FROM distributor_macs WHERE distributor_id=$del");
     mysqli_query($link, "DELETE FROM distributors WHERE id=$del");
     header("location:distributor.php"); exit();
 }
 
-// Edit prefill
+// ── Edit prefill ───────────────────────────────────────────────────────────
 $edit_row = null;
 if(isset($_GET['edit'])){
     $eid = (int)$_GET['edit'];
     $edit_row = mysqli_fetch_assoc(mysqli_query($link, "SELECT * FROM distributors WHERE id=$eid"));
+}
+
+// ── Assign MACs panel data ─────────────────────────────────────────────────
+$show_assign = isset($_GET['assign']) ? (int)$_GET['assign'] : (isset($show_assign) ? $show_assign : 0);
+$assign_dist   = null;
+$all_macs      = [];
+$assigned_macs = [];
+if($show_assign > 0){
+    $assign_dist = mysqli_fetch_assoc(mysqli_query($link, "SELECT * FROM distributors WHERE id=$show_assign"));
+    $mr = mysqli_query($link, "SELECT macid, name, status FROM map ORDER BY name ASC");
+    while($m = mysqli_fetch_assoc($mr)) $all_macs[] = $m;
+    $ar = mysqli_query($link, "SELECT macid FROM distributor_macs WHERE distributor_id=$show_assign");
+    while($a = mysqli_fetch_assoc($ar)) $assigned_macs[] = $a['macid'];
 }
 
 $records = mysqli_query($link, "SELECT * FROM distributors ORDER BY id DESC");
@@ -75,7 +123,62 @@ $active  = mysqli_fetch_assoc(mysqli_query($link,"SELECT COUNT(*) as c FROM dist
                 <h3><?= $total - $active ?></h3><p class="mb-0">Inactive</p>
             </div>
         </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info text-center py-3" style="cursor:pointer;" onclick="window.open('distributor_login.php','_blank')">
+                <h3><i class="fa fa-external-link" style="font-size:20px;line-height:1.5;"></i></h3>
+                <p class="mb-0">Distributor Portal</p>
+            </div>
+        </div>
     </div>
+
+    <?php if($show_assign > 0 && $assign_dist): ?>
+    <!-- ── MAC Assignment Panel ── -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <strong><i class="fa fa-desktop"></i> MAC Assign Karo &mdash; <?= htmlspecialchars($assign_dist['distributor_name']) ?></strong>
+                    <a href="distributor.php" class="btn btn-sm btn-light"><i class="fa fa-times"></i> Close</a>
+                </div>
+                <div class="card-body">
+                    <?php if($success): ?><div class="alert alert-success"><?= $success ?></div><?php endif; ?>
+                    <form method="POST">
+                        <input type="hidden" name="assign_macs" value="1">
+                        <input type="hidden" name="assign_dist_id" value="<?= $show_assign ?>">
+                        <?php if(count($all_macs) === 0): ?>
+                            <p class="text-muted">Map table mein koi MAC nahi hai abhi tak.</p>
+                        <?php else: ?>
+                            <p class="text-muted mb-3" style="font-size:13px;"><i class="fa fa-info-circle"></i> Jo MACs check karein woh is distributor ke ho jaayenge. Uncheck karne pe hata diya jaayega.</p>
+                            <div class="row">
+                            <?php foreach($all_macs as $m): ?>
+                                <div class="col-md-4 col-sm-6 mb-2">
+                                    <div class="custom-control custom-checkbox">
+                                        <input type="checkbox" class="custom-control-input"
+                                               id="mac_<?= htmlspecialchars($m['macid']) ?>"
+                                               name="macs[]"
+                                               value="<?= htmlspecialchars($m['macid']) ?>"
+                                               <?= in_array($m['macid'], $assigned_macs) ? 'checked' : '' ?>>
+                                        <label class="custom-control-label" for="mac_<?= htmlspecialchars($m['macid']) ?>">
+                                            <strong><?= htmlspecialchars($m['name']) ?></strong><br>
+                                            <small class="text-muted"><?= htmlspecialchars($m['macid']) ?></small>
+                                            <span class="badge badge-<?= $m['status']==='ACTIVE' ? 'success' : 'danger' ?> ml-1" style="font-size:10px;"><?= $m['status'] ?></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                            </div>
+                            <hr>
+                            <button type="submit" class="btn btn-info">
+                                <i class="fa fa-save"></i> Save Assignment
+                            </button>
+                            <a href="distributor.php" class="btn btn-secondary ml-2">Cancel</a>
+                        <?php endif; ?>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <div class="row">
         <!-- Form -->
@@ -91,7 +194,7 @@ $active  = mysqli_fetch_assoc(mysqli_query($link,"SELECT COUNT(*) as c FROM dist
                     <?php endif; ?>
                 </div>
                 <div class="card-body">
-                    <?php if($success): ?><div class="alert alert-success"><?= $success ?></div><?php endif; ?>
+                    <?php if($success && !$show_assign): ?><div class="alert alert-success"><?= $success ?></div><?php endif; ?>
                     <?php if($error): ?><div class="alert alert-danger"><?= htmlspecialchars($error) ?></div><?php endif; ?>
 
                     <form method="POST">
@@ -129,6 +232,27 @@ $active  = mysqli_fetch_assoc(mysqli_query($link,"SELECT COUNT(*) as c FROM dist
                                 <option value="inactive" <?= ($edit_row && $edit_row['status']=='inactive') ? 'selected' : '' ?>>Inactive</option>
                             </select>
                         </div>
+
+                        <hr>
+                        <p class="text-muted mb-2" style="font-size:12px;"><i class="fa fa-lock"></i> Portal Login Credentials</p>
+
+                        <div class="form-group">
+                            <label><b>Username</b></label>
+                            <input type="text" name="username" class="form-control" autocomplete="off"
+                                   placeholder="Login username"
+                                   value="<?= $edit_row ? htmlspecialchars($edit_row['username'] ?? '') : '' ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <b>Password</b>
+                                <?php if($edit_row): ?>
+                                    <small class="text-muted font-weight-normal">(blank = change mat karo)</small>
+                                <?php endif; ?>
+                            </label>
+                            <input type="password" name="password" class="form-control" autocomplete="new-password"
+                                   placeholder="<?= $edit_row ? 'Naya password (optional)' : 'Password set karo' ?>">
+                        </div>
+
                         <button type="submit" class="btn btn-<?= $edit_row ? 'warning' : 'success' ?> btn-block">
                             <i class="fa fa-<?= $edit_row ? 'save' : 'plus' ?>"></i>
                             <?= $edit_row ? 'Update Karo' : 'Add Karo' ?>
@@ -154,8 +278,8 @@ $active  = mysqli_fetch_assoc(mysqli_query($link,"SELECT COUNT(*) as c FROM dist
                                 <th>Name</th>
                                 <th>Mobile</th>
                                 <th>City/State</th>
+                                <th>Login</th>
                                 <th>Status</th>
-                                <th>Date</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -164,6 +288,8 @@ $active  = mysqli_fetch_assoc(mysqli_query($link,"SELECT COUNT(*) as c FROM dist
                         $i = 1;
                         mysqli_data_seek($records, 0);
                         while($row = mysqli_fetch_assoc($records)):
+                            $mac_count = mysqli_fetch_assoc(mysqli_query($link,
+                                "SELECT COUNT(*) as c FROM distributor_macs WHERE distributor_id={$row['id']}"))['c'];
                         ?>
                             <tr <?= ($edit_row && $edit_row['id']==$row['id']) ? 'class="table-warning"' : '' ?>>
                                 <td><?= $i++ ?></td>
@@ -171,19 +297,33 @@ $active  = mysqli_fetch_assoc(mysqli_query($link,"SELECT COUNT(*) as c FROM dist
                                 <td><?= htmlspecialchars($row['mobile']) ?></td>
                                 <td><?= htmlspecialchars($row['city']) ?><?= $row['state'] ? ', '.$row['state'] : '' ?></td>
                                 <td>
+                                    <?php if(!empty($row['username'])): ?>
+                                        <span class="badge badge-success"><i class="fa fa-check"></i> Set</span>
+                                        <small class="text-muted d-block"><?= htmlspecialchars($row['username']) ?></small>
+                                    <?php else: ?>
+                                        <span class="badge badge-secondary">—</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
                                     <?php if($row['status']=='active'): ?>
                                         <span class="badge badge-success">Active</span>
                                     <?php else: ?>
                                         <span class="badge badge-danger">Inactive</span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?= date('d-m-Y', strtotime($row['created_at'])) ?></td>
-                                <td>
+                                <td style="white-space:nowrap;">
+                                    <a href="distributor.php?assign=<?= $row['id'] ?>"
+                                       class="btn btn-info btn-sm mb-1" title="MACs Assign Karo">
+                                        <i class="fa fa-desktop"></i>
+                                        <span class="badge badge-light ml-1"><?= $mac_count ?></span>
+                                    </a>
                                     <a href="distributor.php?edit=<?= $row['id'] ?>"
-                                       class="btn btn-warning btn-sm"><i class="fa fa-edit"></i></a>
+                                       class="btn btn-warning btn-sm mb-1"><i class="fa fa-edit"></i></a>
                                     <a href="distributor.php?delete=<?= $row['id'] ?>"
-                                       class="btn btn-danger btn-sm"
-                                       onclick="return confirm('Delete karein?')"><i class="fa fa-trash"></i></a>
+                                       class="btn btn-danger btn-sm mb-1"
+                                       onclick="return confirm('Delete karein? Assigned MACs bhi remove honge.')">
+                                        <i class="fa fa-trash"></i>
+                                    </a>
                                 </td>
                             </tr>
                         <?php endwhile; ?>
