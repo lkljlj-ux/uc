@@ -38,6 +38,9 @@
                                                 <li class=" <?php if($page=='distributor.php'){ echo 'active';} ?>">
                                                         <a href="distributor.php"><i class="menu-icon fa fa-truck"></i> Distributor</a>
                                                 </li>
+                                                <li class=" <?php if($page=='distributor_login.php'){ echo 'active';} ?>">
+                                                        <a href="distributor_login.php" target="_blank"><i class="menu-icon fa fa-sitemap"></i> Dist. Portal</a>
+                                                </li>
                                                 <li class=" <?php if($page=='retailer.php'){ echo 'active';} ?>">
                                                         <a href="retailer.php"><i class="menu-icon fa fa-shopping-cart"></i> Retailer</a>
                                                 </li>
