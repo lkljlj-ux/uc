@@ -132,3 +132,9 @@ id = "_JZUSx60K4Na3ibs-Jk8M"
 uri = "file://ecmp_live_update.zip"
 type = "unspecified"
 title = "Live Update — 3 Files (ecmp_collector + upload API + sidebar)"
+
+[[outputs]]
+id = "gK2bumvbQEGgxey53eUi4"
+uri = "file://ecmp_final_update.zip"
+type = "unspecified"
+title = "ecmp_collector.php + sidebar.php — Sidebar Fix"
