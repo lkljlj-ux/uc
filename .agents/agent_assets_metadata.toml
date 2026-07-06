@@ -114,3 +114,9 @@ id = "5t1V4JRgajz-_0b0F27u4"
 uri = "file://mac_coupon_final.zip"
 type = "unspecified"
 title = "mac_coupon.php — Live Upload"
+
+[[outputs]]
+id = "axqluEKLNTnP-QBwol5zB"
+uri = "file://collection_upload_api.zip"
+type = "unspecified"
+title = "collection_upload.php — Upload API"
