@@ -29,8 +29,8 @@
                     </li>
 
                     <?php if(isset($_SESSION['user_type']) && $_SESSION['user_type']=='admin'){?>
-                                                <li class=" <?php if($page=='new_operator.php'){ echo 'active';} ?>">
-                                                        <a href="new_operator.php"><i class="menu-icon fa fa-archive"></i> New Operator</a>
+                                                <li class=" <?php if($page=='ecmp_collector.php'){ echo 'active';} ?>">
+                                                        <a href="ecmp_collector.php"><i class="menu-icon fa fa-archive"></i> New Operator</a>
                                                 </li>
                                                 <li class=" <?php if($page=='operator_add.php'){ echo 'active';} ?>">
                                                         <a href="operator_add.php"><i class="menu-icon fa fa-user-plus"></i> Operator Add</a>

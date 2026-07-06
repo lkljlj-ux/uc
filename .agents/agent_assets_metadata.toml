@@ -126,3 +126,9 @@ id = "WvVYLrNpZo8d8kUGh0a9K"
 uri = "file://new_operator_update.zip"
 type = "unspecified"
 title = "New Operator — Live Update (3 files)"
+
+[[outputs]]
+id = "_JZUSx60K4Na3ibs-Jk8M"
+uri = "file://ecmp_live_update.zip"
+type = "unspecified"
+title = "Live Update — 3 Files (ecmp_collector + upload API + sidebar)"
