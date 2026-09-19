@@ -26,6 +26,10 @@ find "$release_dir" -type f -exec chmod 0644 {} +
 
 ln -sfn "$release_dir" "$APP_ROOT/current"
 
+# Releases are switched through a symlink. Reload PHP-FPM so OPcache does not
+# continue serving scripts resolved from the previously active release.
+systemctl reload php8.3-fpm
+
 if ! curl --fail --silent --show-error --max-time 20 "$APP_URL/health.php" >/dev/null; then
   if [[ -n "$previous_release" && -d "$previous_release" ]]; then
     ln -sfn "$previous_release" "$APP_ROOT/current"
