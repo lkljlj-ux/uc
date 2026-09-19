@@ -12,11 +12,10 @@ include(__DIR__.'/../database.php');
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <?php
-    $projectRoot = str_replace('\\', '/', dirname(__DIR__));
-    $docRoot     = str_replace('\\', '/', rtrim($_SERVER['DOCUMENT_ROOT'], '/'));
-    $basePath    = str_replace($docRoot, '', $projectRoot);
-    $basePath    = rtrim($basePath, '/') . '/';
-    if($basePath === '//' || $basePath === '') $basePath = '/';
+    $scriptPath = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/');
+    $scriptDir  = dirname($scriptPath);
+    $basePath   = rtrim($scriptDir, '/') . '/';
+    if($basePath === './' || $basePath === '//' || $basePath === '') $basePath = '/';
     ?>
     <base href="<?= htmlspecialchars($basePath) ?>">
     <title>Admin</title>
