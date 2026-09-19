@@ -1,5 +1,6 @@
 <?php
 include('layout/header.php');
+require_once __DIR__ . '/includes/uc_security.php';
 
 if(!isset($_SESSION['user_token'])){
     header("location:" . $basePath . "login.php");
@@ -34,23 +35,6 @@ $tableSql = "CREATE TABLE IF NOT EXISTS uc_operators (
 
 if(!mysqli_query($link, $tableSql)){
     $error = 'UC Operator storage ready nahi ho saka: ' . mysqli_error($link);
-}
-
-function ucEncrypt($value){
-    $secret = getenv('SESSION_SECRET');
-    if($secret === false || $secret === ''){
-        throw new RuntimeException('SESSION_SECRET configure nahi hai.');
-    }
-
-    $key = hash('sha256', $secret, true);
-    $iv = random_bytes(12);
-    $tag = '';
-    $ciphertext = openssl_encrypt($value, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag);
-    if($ciphertext === false){
-        throw new RuntimeException('Sensitive data encrypt nahi ho saka.');
-    }
-
-    return base64_encode($iv . $tag . $ciphertext);
 }
 
 if($_SERVER['REQUEST_METHOD'] === 'POST' && $error === ''){
