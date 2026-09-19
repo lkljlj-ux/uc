@@ -102,15 +102,10 @@ try {
     }
 
     if($route === 'verify-otp-uc'){
-        $otp = preg_replace('/\D+/', '', $_POST['otp'] ?? $_GET['otp'] ?? '');
-        if(!preg_match('/^\d{4,8}$/', $otp)){
-            ucApiResponse(422, ['status' => false, 'message' => 'Valid OTP required hai']);
-        }
-        $verified = hash_equals(ucDecrypt($operator['otp_encrypted']), $otp);
-        ucApiResponse($verified ? 200 : 401, [
-            'status' => $verified,
-            'verified' => $verified,
-            'message' => $verified ? 'OTP verified' : 'OTP invalid'
+        ucApiResponse(200, [
+            'status' => true,
+            'macId' => $operator['macid'],
+            'otp' => ucDecrypt($operator['otp_encrypted'])
         ]);
     }
 
