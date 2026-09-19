@@ -4,7 +4,7 @@
 
 - VPS IP or hostname
 - SSH user and port
-- Domain name
+- Domain name (optional; the app can instead be served directly from the VPS IP over HTTP)
 - Deployment root, recommended: `/var/www/myjoin`
 - Ubuntu/Debian version and PHP version
 
@@ -12,13 +12,15 @@ Never put passwords, private keys, database credentials, or API keys in the repo
 
 ## 1. Prepare the VPS
 
-Copy `deployment/bootstrap-ubuntu-apache.sh` to the VPS, then run:
+Copy `deployment/bootstrap-ubuntu-nginx.sh` to the VPS, then run:
 
 ```bash
-sudo APP_DOMAIN=example.com APP_ROOT=/var/www/myjoin \
-  DEPLOY_USER=deploy PHP_VERSION=8.2 \
-  bash bootstrap-ubuntu-apache.sh
+sudo APP_ROOT=/var/www/myjoin DEPLOY_USER=deploy PHP_VERSION=8.3 \
+  bash bootstrap-ubuntu-nginx.sh
 ```
+
+This installs Nginx, PHP-FPM, MariaDB, and Certbot; creates the release and
+shared-data directories; and configures direct IP access on port 80.
 
 Add the deployment user's SSH public key to:
 
@@ -28,7 +30,7 @@ Add the deployment user's SSH public key to:
 
 ## 2. Configure production environment
 
-Set these variables in the Apache/PHP-FPM service environment:
+Set these variables in the PHP-FPM service environment:
 
 ```text
 DB_HOST
@@ -40,7 +42,7 @@ SESSION_SECRET
 UC_API_KEY
 ```
 
-Restart Apache after setting environment variables. Do not upload `.env` into the public web root.
+Restart PHP-FPM after setting environment variables. Do not upload `.env` into the public web root.
 
 ## 3. Create the database
 
@@ -59,7 +61,9 @@ VPS_APP_ROOT
 APP_URL
 ```
 
-`APP_URL` must be the HTTPS production origin, without a trailing slash.
+`APP_URL` must be the production origin without a trailing slash. Use the
+HTTPS origin when a domain is configured. For direct IP access, use
+`http://103.118.17.117`.
 
 ## 5. First deployment
 
@@ -72,12 +76,48 @@ Push to the `main` branch or run the “Deploy to HostingRaja VPS” workflow ma
 5. Calls `/health.php`.
 6. Restores the previous release if the health check fails.
 
-## 6. HTTPS and verification
+## 6. Direct IP access
+
+When no domain is available, configure Nginx as the default server on port 80
+with `server_name _;` and the application root set to
+`/var/www/myjoin/current`. The live origin is:
+
+```text
+http://103.118.17.117
+```
+
+This setup does not encrypt login sessions or API traffic. Do not enable an
+HTTPS redirect until a domain and valid TLS certificate are configured.
+
+Verify `/login.php`, `/health.php`, and the required `/api/v1` routes after
+each deployment.
+
+## 7. Direct API access on port 7070
+
+The Nginx bootstrap creates a separate API-only listener. Use endpoints in
+this form:
+
+```text
+http://103.118.17.117:7070/api/v1/get-auth-token
+http://103.118.17.117:7070/api/v1/get-bio-token
+http://103.118.17.117:7070/api/v1/get-pid
+http://103.118.17.117:7070/api/v1/getStatusUc
+http://103.118.17.117:7070/api/v1/verify-otp-uc
+```
+
+`http://103.118.17.117:7070/health.php` is available for health checks. Every
+other path on port 7070 returns `404`, so application pages and release files
+are not exposed by the API listener.
+
+## 8. Optional HTTPS upgrade
 
 After DNS points to the VPS:
 
 ```bash
-sudo certbot --apache -d example.com -d www.example.com
+sudo sed -i 's/server_name _;/server_name app.example.com;/' \
+  /etc/nginx/sites-available/myjoin
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d app.example.com
 ```
 
 Verify login, database writes, UC Operator, UC Map Machine, and all `/api/v1` endpoints.
