@@ -1,3 +1,15 @@
 
 # Local MariaDB data
 .mysql/
+
+# Runtime secrets and deployment state
+.env
+.env.*
+!.env.example
+deployment/known_hosts
+deployment/*.key
+deployment/*.pem
+
+# Persistent production data
+collections/
+downloads/

@@ -24,7 +24,11 @@ function ucApiHeader($name){
 }
 
 function ucApiAuthorize(){
-    $expected = getenv('SESSION_SECRET');
+    $expected = getenv('UC_API_KEY');
+    if($expected === false || $expected === ''){
+        // Backward compatibility for existing installations.
+        $expected = getenv('SESSION_SECRET');
+    }
     $received = ucApiHeader('X-Auth-Token');
     if($expected === false || $expected === '' || $received === '' || !hash_equals($expected, $received)){
         ucApiResponse(401, ['status' => false, 'message' => 'Unauthorized']);
