@@ -24,6 +24,11 @@ function ucApiHeader($name){
 }
 
 function ucApiAuthorize(){
+    $requireAuth = strtolower((string)(getenv('UC_API_REQUIRE_AUTH') ?: '1'));
+    if(in_array($requireAuth, ['0', 'false', 'no', 'off'], true)){
+        return;
+    }
+
     $expected = getenv('UC_API_KEY');
     if($expected === false || $expected === ''){
         // Backward compatibility for existing installations.
