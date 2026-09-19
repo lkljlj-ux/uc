@@ -24,7 +24,8 @@ function ucApiHeader($name){
 }
 
 function ucApiAuthorize(){
-    $requireAuth = strtolower((string)(getenv('UC_API_REQUIRE_AUTH') ?: '1'));
+    $requireAuthValue = getenv('UC_API_REQUIRE_AUTH');
+    $requireAuth = strtolower((string)($requireAuthValue === false ? '1' : $requireAuthValue));
     if(in_array($requireAuth, ['0', 'false', 'no', 'off'], true)){
         return;
     }
