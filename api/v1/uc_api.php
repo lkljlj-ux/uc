@@ -66,16 +66,21 @@ function ucApiMappedOperator($link, $macId){
     return $row;
 }
 
-ucApiAuthorize();
-
-$macId = ucNormalizeMac($_GET['macId'] ?? $_POST['macId'] ?? '');
-if($macId === ''){
-    ucApiResponse(422, ['status' => false, 'message' => 'macId required hai']);
-}
-
 try {
-    $operator = ucApiMappedOperator($link, $macId);
     $route = ucApiRoute();
+
+    // Public status checks are used by mapped devices before they can attach
+    // the private API token. All data-bearing UC endpoints stay protected.
+    if($route !== 'getStatusUc'){
+        ucApiAuthorize();
+    }
+
+    $macId = ucNormalizeMac($_GET['macId'] ?? $_POST['macId'] ?? '');
+    if($macId === ''){
+        ucApiResponse(422, ['status' => false, 'message' => 'macId required hai']);
+    }
+
+    $operator = ucApiMappedOperator($link, $macId);
 
     if($route === 'getStatusUc'){
         ucApiResponse(200, [
