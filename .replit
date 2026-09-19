@@ -55,3 +55,7 @@ VPS_DEPLOY_PATH = "/var/www/myjoin"
 VPS_HOST = "103.118.17.117"
 VPS_SSH_PORT = "22"
 VPS_SSH_USER = "root"
+
+[postMerge]
+path = "scripts/post_merge.sh"
+timeoutMs = 120000
