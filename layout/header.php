@@ -12,10 +12,9 @@ include(__DIR__.'/../database.php');
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <?php
-    $scriptPath = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/');
-    $scriptDir  = dirname($scriptPath);
-    $basePath   = rtrim($scriptDir, '/') . '/';
-    if($basePath === './' || $basePath === '//' || $basePath === '') $basePath = '/';
+    // The application is mounted at the web root. Keep shared assets,
+    // navigation, redirects, and API calls root-relative on nested pages.
+    $basePath = '/';
     ?>
     <base href="<?= htmlspecialchars($basePath) ?>">
     <title>Admin</title>

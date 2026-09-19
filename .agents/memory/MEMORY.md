@@ -1,1 +1,2 @@
 - [LAMP on Replit](lamp-on-replit.md) — run a PHP/MySQL app on Replit; MariaDB bootstrap must run as a workflow (bash tool kills it), wire PHP to the local socket via php.ini.
+- [GitHub-to-VPS deployment access](github-vps-deployment-access.md) — bootstrap GitHub Actions with repo/workflow access, then deploy using a dedicated SSH key rather than the VPS password.
