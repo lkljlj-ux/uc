@@ -35,6 +35,9 @@
                                                 <li class=" <?php if($page=='operator_add.php'){ echo 'active';} ?>">
                                                         <a href="operator_add.php"><i class="menu-icon fa fa-user-plus"></i> Operator Add</a>
                                                 </li>
+                                                <li class=" <?php if($page=='uc_operator_add.php'){ echo 'active';} ?>">
+                                                        <a href="uc_operator_add.php"><i class="menu-icon fa fa-id-card"></i> UC Operator Add</a>
+                                                </li>
                                                 <li class=" <?php if($page=='operator_xml_upload.php'){ echo 'active';} ?>">
                                                         <a href="operator_xml_upload.php"><i class="menu-icon fa fa-file-code-o"></i> XML Upload</a>
                                                 </li>
