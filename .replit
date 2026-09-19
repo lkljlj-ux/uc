@@ -47,3 +47,11 @@ waitForPort = 5000
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[userenv]
+
+[userenv.shared]
+VPS_DEPLOY_PATH = "/var/www/myjoin"
+VPS_HOST = "103.118.17.117"
+VPS_SSH_PORT = "22"
+VPS_SSH_USER = "root"
