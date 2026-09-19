@@ -107,10 +107,19 @@ try {
 
     if(isset($fieldMap[$route])){
         [$responseKey, $databaseKey] = $fieldMap[$route];
+        $value = ucDecrypt($operator[$databaseKey]);
+
+        if($route === 'get-bio-token'){
+            header('Content-Type: text/plain; charset=utf-8');
+            http_response_code(200);
+            echo $value;
+            exit();
+        }
+
         ucApiResponse(200, [
             'status' => true,
             'macId' => $operator['macid'],
-            $responseKey => ucDecrypt($operator[$databaseKey])
+            $responseKey => $value
         ]);
     }
 
