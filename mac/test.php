@@ -1,17 +1,6 @@
-<?php 
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-// nirmal singh self code 
-$conn = new mysqli(
-    "localhost",
-    "aadhaar_test",
-    "ftYI6.B#s2K&",
-    "aadhaar_test"
-);
-
-if ($conn->connect_error) {
-    die("DB Error");
-}
+<?php
+require_once __DIR__ . '/../database.php';
+$conn = $link;
 
 $sql = "SELECT \n"
 
