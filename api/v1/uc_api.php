@@ -83,12 +83,10 @@ try {
     $operator = ucApiMappedOperator($link, $macId);
 
     if($route === 'getStatusUc'){
-        ucApiResponse(200, [
-            'status' => true,
-            'macId' => $operator['macid'],
-            'ucStatus' => $operator['status'],
-            'operatorName' => $operator['operator_name']
-        ]);
+        header('Content-Type: text/plain; charset=utf-8');
+        http_response_code(200);
+        echo $operator['status'];
+        exit();
     }
 
     if($operator['status'] !== 'ACTIVE'){
