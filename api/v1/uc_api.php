@@ -125,7 +125,7 @@ try {
 
     if($route === 'verify-otp'){
         if($operator['verify_otp_encrypted'] === null){
-            ucApiResponse(404, ['status' => false, 'message' => 'verify-otp OTP operator ke liye set nahi hai']);
+            ucApiResponse(404, ['status' => false, 'message' => 'verify-otp token operator ke liye set nahi hai']);
         }
         ucApiResponse(200, [
             'status' => true,

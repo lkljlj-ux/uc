@@ -45,8 +45,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && $error === ''){
     } elseif(($_POST['action'] ?? '') === 'set_verify_otp'){
         $operatorId = filter_var($_POST['operator_id'] ?? '', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
         $verifyOtp = trim($_POST['verify_otp'] ?? '');
-        if($operatorId === false || !preg_match('/^\d{4,8}$/', $verifyOtp)){
-            $error = 'Valid operator aur 4 se 8 digit verify-otp OTP dein.';
+        if($operatorId === false || $verifyOtp === '' || strlen($verifyOtp) > 10000){
+            $error = 'Valid operator aur 10000 characters tak ka verify-otp token dein.';
         } else {
             try {
                 $encrypted = ucEncrypt($verifyOtp);
@@ -61,12 +61,12 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && $error === ''){
                 if(mysqli_stmt_affected_rows($stmt) === 0){
                     $error = 'Operator nahi mila.';
                 } else {
-                    $success = 'verify-otp OTP update ho gaya.';
+                    $success = 'verify-otp token update ho gaya.';
                     $_SESSION['uc_operator_csrf'] = bin2hex(random_bytes(32));
                 }
                 mysqli_stmt_close($stmt);
             } catch(Throwable $e){
-                $error = 'verify-otp OTP save nahi ho saka.';
+                $error = 'verify-otp token save nahi ho saka.';
             }
         }
     } else {
@@ -84,11 +84,9 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && $error === ''){
         $error = 'Aadhaar No. exactly 12 digits ka hona chahiye.';
     } elseif(!preg_match('/^\d{4,8}$/', $otp)){
         $error = 'verify-otp-uc OTP 4 se 8 digits ka hona chahiye.';
-    } elseif(!preg_match('/^\d{4,8}$/', $verifyOtp)){
-        $error = 'verify-otp OTP 4 se 8 digits ka hona chahiye.';
     } elseif(strlen($operatorName) > 150){
         $error = 'Operator Name 150 characters se zyada nahi ho sakta.';
-    } elseif(strlen($authToken) > 10000 || strlen($bioToken) > 10000 || strlen($pidData) > 1000000){
+    } elseif(strlen($authToken) > 10000 || strlen($bioToken) > 10000 || strlen($verifyOtp) > 10000 || strlen($pidData) > 1000000){
         $error = 'Token ya PID Data allowed size se bada hai.';
     } else {
         try {
@@ -205,15 +203,14 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
                                            required placeholder="4 se 8 digit OTP">
                                 </div>
                                 <div class="form-group col-md-6">
-                                    <label for="verify_otp"><b>verify-otp OTP</b></label>
-                                    <input id="verify_otp" type="password" name="verify_otp" class="form-control"
-                                           inputmode="numeric" pattern="[0-9]{4,8}" minlength="4" maxlength="8"
-                                           required placeholder="4 se 8 digit alag OTP">
+                                    <label for="verify_otp"><b>verify-otp Token</b></label>
+                                    <textarea id="verify_otp" name="verify_otp" class="form-control" rows="3"
+                                              maxlength="10000" required placeholder="Auth token ki tarah text paste karein"><?= htmlspecialchars($_POST['verify_otp'] ?? '') ?></textarea>
                                 </div>
                             </div>
 
                             <div class="alert alert-info py-2">
-                                Aadhaar, tokens, PID Data aur OTP encrypted form mein save honge.
+                                Aadhaar, tokens, PID Data aur verify-otp-uc OTP encrypted form mein save honge.
                             </div>
                             <button type="submit" class="btn btn-success">
                                 <i class="fa fa-save"></i> UC Operator Add Karo
@@ -237,7 +234,7 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
                                         <th>Operator Name</th>
                                         <th>Aadhaar No.</th>
                                         <th>Sensitive Data</th>
-                                        <th>verify-otp OTP</th>
+                                        <th>verify-otp Token</th>
                                         <th>Added On</th>
                                     </tr>
                                 </thead>
@@ -254,10 +251,10 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
                                                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['uc_operator_csrf']) ?>">
                                                     <input type="hidden" name="action" value="set_verify_otp">
                                                     <input type="hidden" name="operator_id" value="<?= (int)$row['id'] ?>">
-                                                    <input type="password" name="verify_otp" class="form-control form-control-sm mr-2 mb-1"
-                                                           aria-label="verify-otp OTP for <?= htmlspecialchars($row['operator_name']) ?>"
-                                                           inputmode="numeric" pattern="[0-9]{4,8}" minlength="4" maxlength="8"
-                                                           required placeholder="<?= $row['has_verify_otp'] ? 'Replace OTP' : 'Set OTP' ?>">
+                                                    <textarea name="verify_otp" class="form-control form-control-sm mr-2 mb-1"
+                                                              aria-label="verify-otp Token for <?= htmlspecialchars($row['operator_name']) ?>"
+                                                              rows="2" maxlength="10000" required
+                                                              placeholder="<?= $row['has_verify_otp'] ? 'Replace token' : 'Paste token' ?>"></textarea>
                                                     <button type="submit" class="btn btn-sm btn-primary mb-1"><?= $row['has_verify_otp'] ? 'Update' : 'Save' ?></button>
                                                 </form>
                                             </td>
