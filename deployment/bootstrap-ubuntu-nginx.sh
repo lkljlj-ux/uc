@@ -38,7 +38,7 @@ server {
         try_files \$uri \$uri/ /index.php?\$query_string;
     }
 
-    location ~ ^/api/v1/(get-auth-token|get-bio-token|get-pid|getStatusUc|verify-otp|verify-otp-uc)/?\$ {
+    location ~ ^/api/v1/(get-auth-token|get-bio-token|get-pid|getStatusUc|verify-otp|verify-otp-uc|upload-uc-count)/?\$ {
         include fastcgi_params;
         fastcgi_param SCRIPT_FILENAME \$document_root/api/v1/uc_api.php;
         fastcgi_param QUERY_STRING route=\$1&\$query_string;
@@ -73,7 +73,7 @@ server {
         fastcgi_pass unix:/run/php/php${PHP_VERSION}-fpm.sock;
     }
 
-    location ~ ^/api/v1/(get-auth-token|get-bio-token|get-pid|getStatusUc|verify-otp|verify-otp-uc)/?\$ {
+    location ~ ^/api/v1/(get-auth-token|get-bio-token|get-pid|getStatusUc|verify-otp|verify-otp-uc|upload-uc-count)/?\$ {
         include fastcgi_params;
         fastcgi_param SCRIPT_FILENAME \$document_root/api/v1/uc_api.php;
         fastcgi_param QUERY_STRING route=\$1&\$query_string;

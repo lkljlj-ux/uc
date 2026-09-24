@@ -41,6 +41,9 @@
                                                 <li class=" <?php if($page=='uc_map.php'){ echo 'active';} ?>">
                                                         <a href="uc_map.php"><i class="menu-icon fa fa-sitemap"></i> UC Map Machine</a>
                                                 </li>
+                                                 <li class=" <?php if($page=='uc_report.php'){ echo 'active';} ?>">
+                                                         <a href="uc_report.php"><i class="menu-icon fa fa-bar-chart"></i> UC Report</a>
+                                                 </li>
                                                 <li class=" <?php if($page=='operator_xml_upload.php'){ echo 'active';} ?>">
                                                         <a href="operator_xml_upload.php"><i class="menu-icon fa fa-file-code-o"></i> XML Upload</a>
                                                 </li>

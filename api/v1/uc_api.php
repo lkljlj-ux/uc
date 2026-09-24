@@ -99,6 +99,37 @@ try {
         ucApiResponse(403, ['status' => false, 'message' => 'UC mapping inactive hai']);
     }
 
+    if($route === 'upload-uc-count'){
+        if($_SERVER['REQUEST_METHOD'] !== 'POST'){
+            header('Allow: POST, OPTIONS');
+            ucApiResponse(405, ['status' => false, 'message' => 'POST required hai']);
+        }
+
+        $sid = $_GET['sid'] ?? $_POST['sid'] ?? '';
+        if(!is_string($sid) || trim($sid) === '' || strlen($sid) > 255){
+            ucApiResponse(422, ['status' => false, 'message' => 'sid required hai (max 255 characters)']);
+        }
+        $sid = trim($sid);
+
+        $stmt = mysqli_prepare($link, "INSERT INTO uc_upload_counts (macid, sid, upload_count)
+            VALUES (?, ?, 1)
+            ON DUPLICATE KEY UPDATE upload_count = upload_count + 1");
+        if(!$stmt){
+            throw new RuntimeException('UC upload count query unavailable');
+        }
+        mysqli_stmt_bind_param($stmt, 'ss', $macId, $sid);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+
+        $stmt = mysqli_prepare($link, "SELECT upload_count FROM uc_upload_counts WHERE macid = ? AND sid = ?");
+        mysqli_stmt_bind_param($stmt, 'ss', $macId, $sid);
+        mysqli_stmt_execute($stmt);
+        $count = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+        mysqli_stmt_close($stmt);
+
+        ucApiResponse(200, ['status' => true, 'macId' => $macId, 'sid' => $sid, 'count' => (int)$count['upload_count']]);
+    }
+
     $fieldMap = [
         'get-auth-token' => ['authToken', 'auth_token_encrypted'],
         'get-bio-token' => ['bioToken', 'bio_token_encrypted'],

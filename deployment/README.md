@@ -104,6 +104,7 @@ http://103.118.17.117:7070/api/v1/get-pid
 http://103.118.17.117:7070/api/v1/getStatusUc
 http://103.118.17.117:7070/api/v1/verify-otp
 http://103.118.17.117:7070/api/v1/verify-otp-uc
+http://103.118.17.117:7070/api/v1/upload-uc-count
 ```
 
 `http://103.118.17.117:7070/health.php` is available for health checks. Every
@@ -117,6 +118,12 @@ operators have no verify-otp token until an admin sets it from UC Operator Add;
 the existing verify-otp-uc value remains unchanged until an admin updates it.
 Both verify-otp and verify-otp-uc fields accept arbitrary tokens up to 10000
 characters despite the API route names.
+
+Before deploying upload-count support, apply `deployment/migrations/003_uc_upload_counts.sql`
+to the application database and add `upload-uc-count` to both Nginx API route
+allowlists. The client sends `POST /api/v1/upload-uc-count?macId=...&sid=...`
+with no request body. Each POST increments the stored count for that MAC and
+SID by one. Admins can view the totals from UC Report in the sidebar.
 
 ## 8. Optional HTTPS upgrade
 
