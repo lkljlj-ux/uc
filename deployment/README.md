@@ -123,7 +123,8 @@ Before deploying upload-count support, apply `deployment/migrations/003_uc_uploa
 to the application database and add `upload-uc-count` to both Nginx API route
 allowlists. The client sends `POST /api/v1/upload-uc-count?macId=...&sid=...`
 with no request body. Each POST increments the stored count for that MAC and
-SID by one. Admins can view the totals from UC Report in the sidebar.
+SID by one, even when that MAC has no UC operator mapping. Admins can view
+the totals from UC Report in the sidebar.
 
 ## 8. Optional HTTPS upgrade
 

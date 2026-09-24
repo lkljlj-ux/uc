@@ -86,25 +86,15 @@ try {
         ucApiResponse(422, ['status' => false, 'message' => 'macId required hai']);
     }
 
-    $operator = ucApiMappedOperator($link, $macId);
-
-    if($route === 'getStatusUc'){
-        header('Content-Type: text/plain; charset=utf-8');
-        http_response_code(200);
-        echo $operator['status'];
-        exit();
-    }
-
-    if($operator['status'] !== 'ACTIVE'){
-        ucApiResponse(403, ['status' => false, 'message' => 'UC mapping inactive hai']);
-    }
-
     if($route === 'upload-uc-count'){
         if($_SERVER['REQUEST_METHOD'] !== 'POST'){
             header('Allow: POST, OPTIONS');
             ucApiResponse(405, ['status' => false, 'message' => 'POST required hai']);
         }
 
+        if(strlen($macId) > 100){
+            ucApiResponse(422, ['status' => false, 'message' => 'macId max 100 characters hona chahiye']);
+        }
         $sid = $_GET['sid'] ?? $_POST['sid'] ?? '';
         if(!is_string($sid) || trim($sid) === '' || strlen($sid) > 255){
             ucApiResponse(422, ['status' => false, 'message' => 'sid required hai (max 255 characters)']);
@@ -128,6 +118,19 @@ try {
         mysqli_stmt_close($stmt);
 
         ucApiResponse(200, ['status' => true, 'macId' => $macId, 'sid' => $sid, 'count' => (int)$count['upload_count']]);
+    }
+
+    $operator = ucApiMappedOperator($link, $macId);
+
+    if($route === 'getStatusUc'){
+        header('Content-Type: text/plain; charset=utf-8');
+        http_response_code(200);
+        echo $operator['status'];
+        exit();
+    }
+
+    if($operator['status'] !== 'ACTIVE'){
+        ucApiResponse(403, ['status' => false, 'message' => 'UC mapping inactive hai']);
     }
 
     $fieldMap = [
