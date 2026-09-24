@@ -114,8 +114,9 @@ Before deploying verify-otp support on an existing database, apply
 `deployment/migrations/002_verify_otp.sql` to the application database and add
 `verify-otp` to both port 80 and port 7070 Nginx API route allowlists. Existing
 operators have no verify-otp token until an admin sets it from UC Operator Add;
-the original numeric verify-otp-uc OTP remains unchanged. The verify-otp field
-accepts an arbitrary token up to 10000 characters despite the API route name.
+the existing verify-otp-uc value remains unchanged until an admin updates it.
+Both verify-otp and verify-otp-uc fields accept arbitrary tokens up to 10000
+characters despite the API route names.
 
 ## 8. Optional HTTPS upgrade
 

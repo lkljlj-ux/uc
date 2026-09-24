@@ -42,15 +42,19 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && $error === ''){
     $csrf = $_POST['csrf_token'] ?? '';
     if(!hash_equals($_SESSION['uc_operator_csrf'], $csrf)){
         $error = 'Form session expire ho gaya. Page refresh karke dobara submit karein.';
-    } elseif(($_POST['action'] ?? '') === 'set_verify_otp'){
+    } elseif(in_array($_POST['action'] ?? '', ['set_verify_otp', 'set_otp_uc'], true)){
+        $isUcToken = $_POST['action'] === 'set_otp_uc';
+        $field = $isUcToken ? 'otp' : 'verify_otp';
+        $column = $isUcToken ? 'otp_encrypted' : 'verify_otp_encrypted';
+        $label = $isUcToken ? 'verify-otp-uc' : 'verify-otp';
         $operatorId = filter_var($_POST['operator_id'] ?? '', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-        $verifyOtp = trim($_POST['verify_otp'] ?? '');
-        if($operatorId === false || $verifyOtp === '' || strlen($verifyOtp) > 10000){
-            $error = 'Valid operator aur 10000 characters tak ka verify-otp token dein.';
+        $token = trim($_POST[$field] ?? '');
+        if($operatorId === false || $token === '' || strlen($token) > 10000){
+            $error = "Valid operator aur 10000 characters tak ka $label token dein.";
         } else {
             try {
-                $encrypted = ucEncrypt($verifyOtp);
-                $stmt = mysqli_prepare($link, "UPDATE uc_operators SET verify_otp_encrypted = ? WHERE id = ?");
+                $encrypted = ucEncrypt($token);
+                $stmt = mysqli_prepare($link, "UPDATE uc_operators SET $column = ? WHERE id = ?");
                 if(!$stmt){
                     throw new RuntimeException(mysqli_error($link));
                 }
@@ -61,12 +65,12 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && $error === ''){
                 if(mysqli_stmt_affected_rows($stmt) === 0){
                     $error = 'Operator nahi mila.';
                 } else {
-                    $success = 'verify-otp token update ho gaya.';
+                    $success = "$label token update ho gaya.";
                     $_SESSION['uc_operator_csrf'] = bin2hex(random_bytes(32));
                 }
                 mysqli_stmt_close($stmt);
             } catch(Throwable $e){
-                $error = 'verify-otp token save nahi ho saka.';
+                $error = "$label token save nahi ho saka.";
             }
         }
     } else {
@@ -75,18 +79,16 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && $error === ''){
     $authToken = trim($_POST['auth_token'] ?? '');
     $bioToken = trim($_POST['bio_token'] ?? '');
     $pidData = trim($_POST['pid_data'] ?? '');
-    $otp = preg_replace('/\D+/', '', $_POST['otp'] ?? '');
+    $otp = trim($_POST['otp'] ?? '');
     $verifyOtp = trim($_POST['verify_otp'] ?? '');
 
     if($operatorName === '' || $aadhaarNo === '' || $authToken === '' || $bioToken === '' || $pidData === '' || $otp === '' || $verifyOtp === ''){
         $error = 'Sabhi fields bharna zaroori hai.';
     } elseif(!preg_match('/^\d{12}$/', $aadhaarNo)){
         $error = 'Aadhaar No. exactly 12 digits ka hona chahiye.';
-    } elseif(!preg_match('/^\d{4,8}$/', $otp)){
-        $error = 'verify-otp-uc OTP 4 se 8 digits ka hona chahiye.';
     } elseif(strlen($operatorName) > 150){
         $error = 'Operator Name 150 characters se zyada nahi ho sakta.';
-    } elseif(strlen($authToken) > 10000 || strlen($bioToken) > 10000 || strlen($verifyOtp) > 10000 || strlen($pidData) > 1000000){
+    } elseif(strlen($authToken) > 10000 || strlen($bioToken) > 10000 || strlen($otp) > 10000 || strlen($verifyOtp) > 10000 || strlen($pidData) > 1000000){
         $error = 'Token ya PID Data allowed size se bada hai.';
     } else {
         try {
@@ -197,10 +199,9 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
 
                             <div class="form-row">
                                 <div class="form-group col-md-6">
-                                    <label for="otp"><b>verify-otp-uc OTP</b></label>
-                                    <input id="otp" type="password" name="otp" class="form-control"
-                                           inputmode="numeric" pattern="[0-9]{4,8}" minlength="4" maxlength="8"
-                                           required placeholder="4 se 8 digit OTP">
+                                    <label for="otp"><b>verify-otp-uc Token</b></label>
+                                    <textarea id="otp" name="otp" class="form-control" rows="3"
+                                              maxlength="10000" required placeholder="Auth token ki tarah text paste karein"><?= htmlspecialchars($_POST['otp'] ?? '') ?></textarea>
                                 </div>
                                 <div class="form-group col-md-6">
                                     <label for="verify_otp"><b>verify-otp Token</b></label>
@@ -210,7 +211,7 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
                             </div>
 
                             <div class="alert alert-info py-2">
-                                Aadhaar, tokens, PID Data aur verify-otp-uc OTP encrypted form mein save honge.
+                                Aadhaar, tokens aur PID Data encrypted form mein save honge.
                             </div>
                             <button type="submit" class="btn btn-success">
                                 <i class="fa fa-save"></i> UC Operator Add Karo
@@ -235,6 +236,7 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
                                         <th>Aadhaar No.</th>
                                         <th>Sensitive Data</th>
                                         <th>verify-otp Token</th>
+                                        <th>verify-otp-uc Token</th>
                                         <th>Added On</th>
                                     </tr>
                                 </thead>
@@ -258,11 +260,22 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
                                                     <button type="submit" class="btn btn-sm btn-primary mb-1"><?= $row['has_verify_otp'] ? 'Update' : 'Save' ?></button>
                                                 </form>
                                             </td>
+                                            <td>
+                                                <form method="POST" action="uc_operator_add.php" autocomplete="off" class="form-inline">
+                                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['uc_operator_csrf']) ?>">
+                                                    <input type="hidden" name="action" value="set_otp_uc">
+                                                    <input type="hidden" name="operator_id" value="<?= (int)$row['id'] ?>">
+                                                    <textarea name="otp" class="form-control form-control-sm mr-2 mb-1"
+                                                              aria-label="verify-otp-uc Token for <?= htmlspecialchars($row['operator_name']) ?>"
+                                                              rows="2" maxlength="10000" required placeholder="Replace token"></textarea>
+                                                    <button type="submit" class="btn btn-sm btn-primary mb-1">Update</button>
+                                                </form>
+                                            </td>
                                             <td><?= htmlspecialchars($row['created_at']) ?></td>
                                         </tr>
                                     <?php endwhile; ?>
                                 <?php else: ?>
-                                    <tr><td colspan="6" class="text-center text-muted">Abhi koi UC Operator add nahi hua.</td></tr>
+                                    <tr><td colspan="7" class="text-center text-muted">Abhi koi UC Operator add nahi hua.</td></tr>
                                 <?php endif; ?>
                                 </tbody>
                             </table>
