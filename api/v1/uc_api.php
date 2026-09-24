@@ -52,7 +52,7 @@ function ucApiRoute(){
 function ucApiMappedOperator($link, $macId){
     $stmt = mysqli_prepare($link, "SELECT
             m.macid, m.status, u.id, u.operator_name, u.aadhaar_last4,
-            u.auth_token_encrypted, u.bio_token_encrypted, u.pid_data_encrypted, u.otp_encrypted
+            u.auth_token_encrypted, u.bio_token_encrypted, u.pid_data_encrypted, u.otp_encrypted, u.verify_otp_encrypted
         FROM uc_machine_map m
         INNER JOIN uc_operators u ON u.id = m.uc_operator_id
         WHERE m.macid = ?
@@ -120,6 +120,17 @@ try {
             'status' => true,
             'macId' => $operator['macid'],
             $responseKey => $value
+        ]);
+    }
+
+    if($route === 'verify-otp'){
+        if($operator['verify_otp_encrypted'] === null){
+            ucApiResponse(404, ['status' => false, 'message' => 'verify-otp OTP operator ke liye set nahi hai']);
+        }
+        ucApiResponse(200, [
+            'status' => true,
+            'macId' => $operator['macid'],
+            'otp' => ucDecrypt($operator['verify_otp_encrypted'])
         ]);
     }
 

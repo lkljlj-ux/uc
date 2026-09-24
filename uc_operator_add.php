@@ -28,6 +28,7 @@ $tableSql = "CREATE TABLE IF NOT EXISTS uc_operators (
     bio_token_encrypted TEXT NOT NULL,
     pid_data_encrypted LONGTEXT NOT NULL,
     otp_encrypted TEXT NOT NULL,
+    verify_otp_encrypted TEXT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     INDEX idx_uc_operator_created (created_at)
@@ -38,22 +39,53 @@ if(!mysqli_query($link, $tableSql)){
 }
 
 if($_SERVER['REQUEST_METHOD'] === 'POST' && $error === ''){
+    $csrf = $_POST['csrf_token'] ?? '';
+    if(!hash_equals($_SESSION['uc_operator_csrf'], $csrf)){
+        $error = 'Form session expire ho gaya. Page refresh karke dobara submit karein.';
+    } elseif(($_POST['action'] ?? '') === 'set_verify_otp'){
+        $operatorId = filter_var($_POST['operator_id'] ?? '', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        $verifyOtp = trim($_POST['verify_otp'] ?? '');
+        if($operatorId === false || !preg_match('/^\d{4,8}$/', $verifyOtp)){
+            $error = 'Valid operator aur 4 se 8 digit verify-otp OTP dein.';
+        } else {
+            try {
+                $encrypted = ucEncrypt($verifyOtp);
+                $stmt = mysqli_prepare($link, "UPDATE uc_operators SET verify_otp_encrypted = ? WHERE id = ?");
+                if(!$stmt){
+                    throw new RuntimeException(mysqli_error($link));
+                }
+                mysqli_stmt_bind_param($stmt, 'si', $encrypted, $operatorId);
+                if(!mysqli_stmt_execute($stmt)){
+                    throw new RuntimeException(mysqli_stmt_error($stmt));
+                }
+                if(mysqli_stmt_affected_rows($stmt) === 0){
+                    $error = 'Operator nahi mila.';
+                } else {
+                    $success = 'verify-otp OTP update ho gaya.';
+                    $_SESSION['uc_operator_csrf'] = bin2hex(random_bytes(32));
+                }
+                mysqli_stmt_close($stmt);
+            } catch(Throwable $e){
+                $error = 'verify-otp OTP save nahi ho saka.';
+            }
+        }
+    } else {
     $operatorName = trim($_POST['operator_name'] ?? '');
     $aadhaarNo = preg_replace('/\D+/', '', $_POST['aadhaar_no'] ?? '');
     $authToken = trim($_POST['auth_token'] ?? '');
     $bioToken = trim($_POST['bio_token'] ?? '');
     $pidData = trim($_POST['pid_data'] ?? '');
     $otp = preg_replace('/\D+/', '', $_POST['otp'] ?? '');
-    $csrf = $_POST['csrf_token'] ?? '';
+    $verifyOtp = trim($_POST['verify_otp'] ?? '');
 
-    if(!hash_equals($_SESSION['uc_operator_csrf'], $csrf)){
-        $error = 'Form session expire ho gaya. Page refresh karke dobara submit karein.';
-    } elseif($operatorName === '' || $aadhaarNo === '' || $authToken === '' || $bioToken === '' || $pidData === '' || $otp === ''){
+    if($operatorName === '' || $aadhaarNo === '' || $authToken === '' || $bioToken === '' || $pidData === '' || $otp === '' || $verifyOtp === ''){
         $error = 'Sabhi fields bharna zaroori hai.';
     } elseif(!preg_match('/^\d{12}$/', $aadhaarNo)){
         $error = 'Aadhaar No. exactly 12 digits ka hona chahiye.';
     } elseif(!preg_match('/^\d{4,8}$/', $otp)){
-        $error = 'OTP 4 se 8 digits ka hona chahiye.';
+        $error = 'verify-otp-uc OTP 4 se 8 digits ka hona chahiye.';
+    } elseif(!preg_match('/^\d{4,8}$/', $verifyOtp)){
+        $error = 'verify-otp OTP 4 se 8 digits ka hona chahiye.';
     } elseif(strlen($operatorName) > 150){
         $error = 'Operator Name 150 characters se zyada nahi ho sakta.';
     } elseif(strlen($authToken) > 10000 || strlen($bioToken) > 10000 || strlen($pidData) > 1000000){
@@ -65,11 +97,12 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && $error === ''){
             $bioEncrypted = ucEncrypt($bioToken);
             $pidEncrypted = ucEncrypt($pidData);
             $otpEncrypted = ucEncrypt($otp);
+            $verifyOtpEncrypted = ucEncrypt($verifyOtp);
             $aadhaarLast4 = substr($aadhaarNo, -4);
 
             $stmt = mysqli_prepare($link, "INSERT INTO uc_operators
-                (operator_name, aadhaar_encrypted, aadhaar_last4, auth_token_encrypted, bio_token_encrypted, pid_data_encrypted, otp_encrypted)
-                VALUES (?, ?, ?, ?, ?, ?, ?)");
+                (operator_name, aadhaar_encrypted, aadhaar_last4, auth_token_encrypted, bio_token_encrypted, pid_data_encrypted, otp_encrypted, verify_otp_encrypted)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
             if(!$stmt){
                 throw new RuntimeException(mysqli_error($link));
@@ -77,14 +110,15 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && $error === ''){
 
             mysqli_stmt_bind_param(
                 $stmt,
-                'sssssss',
+                'ssssssss',
                 $operatorName,
                 $aadhaarEncrypted,
                 $aadhaarLast4,
                 $authEncrypted,
                 $bioEncrypted,
                 $pidEncrypted,
-                $otpEncrypted
+                $otpEncrypted,
+                $verifyOtpEncrypted
             );
 
             if(!mysqli_stmt_execute($stmt)){
@@ -99,11 +133,12 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && $error === ''){
             $error = 'UC Operator save nahi ho saka: ' . $e->getMessage();
         }
     }
+    }
 }
 
 $operators = false;
 if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
-    $operators = mysqli_query($link, "SELECT id, operator_name, aadhaar_last4, created_at FROM uc_operators ORDER BY id DESC LIMIT 100");
+    $operators = mysqli_query($link, "SELECT id, operator_name, aadhaar_last4, verify_otp_encrypted IS NOT NULL AS has_verify_otp, created_at FROM uc_operators ORDER BY id DESC LIMIT 100");
 }
 ?>
 
@@ -164,10 +199,16 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
 
                             <div class="form-row">
                                 <div class="form-group col-md-6">
-                                    <label for="otp"><b>OTP</b></label>
+                                    <label for="otp"><b>verify-otp-uc OTP</b></label>
                                     <input id="otp" type="password" name="otp" class="form-control"
                                            inputmode="numeric" pattern="[0-9]{4,8}" minlength="4" maxlength="8"
                                            required placeholder="4 se 8 digit OTP">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label for="verify_otp"><b>verify-otp OTP</b></label>
+                                    <input id="verify_otp" type="password" name="verify_otp" class="form-control"
+                                           inputmode="numeric" pattern="[0-9]{4,8}" minlength="4" maxlength="8"
+                                           required placeholder="4 se 8 digit alag OTP">
                                 </div>
                             </div>
 
@@ -196,6 +237,7 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
                                         <th>Operator Name</th>
                                         <th>Aadhaar No.</th>
                                         <th>Sensitive Data</th>
+                                        <th>verify-otp OTP</th>
                                         <th>Added On</th>
                                     </tr>
                                 </thead>
@@ -207,11 +249,23 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
                                             <td><?= htmlspecialchars($row['operator_name']) ?></td>
                                             <td><?= htmlspecialchars('********' . $row['aadhaar_last4']) ?></td>
                                             <td><span class="badge badge-success">Encrypted</span></td>
+                                            <td>
+                                                <form method="POST" action="uc_operator_add.php" autocomplete="off" class="form-inline">
+                                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['uc_operator_csrf']) ?>">
+                                                    <input type="hidden" name="action" value="set_verify_otp">
+                                                    <input type="hidden" name="operator_id" value="<?= (int)$row['id'] ?>">
+                                                    <input type="password" name="verify_otp" class="form-control form-control-sm mr-2 mb-1"
+                                                           aria-label="verify-otp OTP for <?= htmlspecialchars($row['operator_name']) ?>"
+                                                           inputmode="numeric" pattern="[0-9]{4,8}" minlength="4" maxlength="8"
+                                                           required placeholder="<?= $row['has_verify_otp'] ? 'Replace OTP' : 'Set OTP' ?>">
+                                                    <button type="submit" class="btn btn-sm btn-primary mb-1"><?= $row['has_verify_otp'] ? 'Update' : 'Save' ?></button>
+                                                </form>
+                                            </td>
                                             <td><?= htmlspecialchars($row['created_at']) ?></td>
                                         </tr>
                                     <?php endwhile; ?>
                                 <?php else: ?>
-                                    <tr><td colspan="5" class="text-center text-muted">Abhi koi UC Operator add nahi hua.</td></tr>
+                                    <tr><td colspan="6" class="text-center text-muted">Abhi koi UC Operator add nahi hua.</td></tr>
                                 <?php endif; ?>
                                 </tbody>
                             </table>

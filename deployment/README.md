@@ -102,12 +102,19 @@ http://103.118.17.117:7070/api/v1/get-auth-token
 http://103.118.17.117:7070/api/v1/get-bio-token
 http://103.118.17.117:7070/api/v1/get-pid
 http://103.118.17.117:7070/api/v1/getStatusUc
+http://103.118.17.117:7070/api/v1/verify-otp
 http://103.118.17.117:7070/api/v1/verify-otp-uc
 ```
 
 `http://103.118.17.117:7070/health.php` is available for health checks. Every
 other path on port 7070 returns `404`, so application pages and release files
 are not exposed by the API listener.
+
+Before deploying verify-otp support on an existing database, apply
+`deployment/migrations/002_verify_otp.sql` to the application database and add
+`verify-otp` to both port 80 and port 7070 Nginx API route allowlists. Existing
+operators have no verify-otp OTP until an admin sets it from UC Operator Add;
+the original verify-otp-uc OTP remains unchanged.
 
 ## 8. Optional HTTPS upgrade
 
