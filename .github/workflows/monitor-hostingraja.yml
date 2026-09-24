@@ -1,0 +1,58 @@
+name: Monitor HostingRaja VPS
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      test_alert:
+        description: 'Send a harmless routing test issue (no outage injection)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: hostingraja-monitor
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe web, API and host monitor
+        id: probe
+        continue-on-error: true
+        env:
+          WEB_URL: ${{ secrets.APP_URL }}
+          API_URL: ${{ secrets.API_MONITOR_URL }}
+        run: python3 deployment/check-availability.py
+      - name: Route alert to an assigned GitHub issue
+        if: steps.probe.outcome == 'failure' || inputs.test_alert == true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ASSIGNEE: ${{ vars.MONITOR_ALERT_ASSIGNEE }}
+          TEST_ALERT: ${{ inputs.test_alert }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${ASSIGNEE:?Set repository variable MONITOR_ALERT_ASSIGNEE to an account that receives issue notifications}"
+          if [[ "$TEST_ALERT" == "true" ]]; then
+            title="[Monitor test] HostingRaja alert routing run $GITHUB_RUN_ID"
+            body="Harmless routing test requested by workflow_dispatch. Confirm the assignee received a GitHub notification. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            gh issue create -R "$REPO" --title "$title" --body "$body" --assignee "$ASSIGNEE"
+          else
+            title='[Monitor] HostingRaja web, API or host integrity unhealthy'
+            body="At least one external probe failed. Check the run logs and the restricted VPS evidence before any reinstall. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            existing="$(gh issue list -R "$REPO" --state open --limit 100 --json number,title --jq ".[] | select(.title == \"$title\") | .number" | head -n1)"
+            if [[ -z "$existing" ]]; then
+              gh issue create -R "$REPO" --title "$title" --body "$body" --assignee "$ASSIGNEE"
+            fi
+          fi
+      - name: Fail run when a probe failed
+        if: steps.probe.outcome == 'failure'
+        run: exit 1
