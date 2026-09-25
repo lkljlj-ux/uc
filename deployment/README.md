@@ -114,6 +114,8 @@ are not exposed by the API listener.
 On success, `get-pid` returns only the decrypted PID data as plain text (not a
 JSON object). Authentication, missing mapping, and other errors still return
 JSON error responses.
+On success, `verify-otp-uc` likewise returns only its decrypted OTP value as
+plain text; its error responses remain JSON.
 
 Before deploying verify-otp support on an existing database, apply
 `deployment/migrations/002_verify_otp.sql` to the application database and add

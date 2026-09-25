@@ -169,11 +169,10 @@ try {
     }
 
     if($route === 'verify-otp-uc'){
-        ucApiResponse(200, [
-            'status' => true,
-            'macId' => $operator['macid'],
-            'otp' => ucDecrypt($operator['otp_encrypted'])
-        ]);
+        header('Content-Type: text/plain; charset=utf-8');
+        http_response_code(200);
+        echo ucDecrypt($operator['otp_encrypted']);
+        exit();
     }
 
     ucApiResponse(404, ['status' => false, 'message' => 'API endpoint nahi mila']);
