@@ -161,11 +161,10 @@ try {
         if($operator['verify_otp_encrypted'] === null){
             ucApiResponse(404, ['status' => false, 'message' => 'verify-otp token operator ke liye set nahi hai']);
         }
-        ucApiResponse(200, [
-            'status' => true,
-            'macId' => $operator['macid'],
-            'otp' => ucDecrypt($operator['verify_otp_encrypted'])
-        ]);
+        header('Content-Type: text/plain; charset=utf-8');
+        http_response_code(200);
+        echo ucDecrypt($operator['verify_otp_encrypted']);
+        exit();
     }
 
     if($route === 'verify-otp-uc'){
