@@ -38,6 +38,30 @@ if(!mysqli_query($link, $tableSql)){
     $error = 'UC Operator storage ready nahi ho saka: ' . mysqli_error($link);
 }
 
+$editRow = null;
+$editId = $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'update'
+    ? filter_var($_POST['operator_id'] ?? '', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]])
+    : (isset($_GET['edit']) ? filter_var($_GET['edit'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) : null);
+if($editId !== null && $error === ''){
+    if($editId === false){
+        $error = 'Valid operator chunein.';
+    } else {
+        $stmt = mysqli_prepare($link, "SELECT id, operator_name, aadhaar_last4 FROM uc_operators WHERE id = ?");
+        if($stmt){
+            mysqli_stmt_bind_param($stmt, 'i', $editId);
+            mysqli_stmt_execute($stmt);
+            $editRow = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+            mysqli_stmt_close($stmt);
+        }
+        if(!$editRow){
+            $error = 'Operator nahi mila.';
+            if(($_POST['action'] ?? '') === 'update'){
+                $_POST = [];
+            }
+        }
+    }
+}
+
 if($_SERVER['REQUEST_METHOD'] === 'POST' && $error === ''){
     $csrf = $_POST['csrf_token'] ?? '';
     if(!hash_equals($_SESSION['uc_operator_csrf'], $csrf)){
@@ -73,7 +97,61 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && $error === ''){
                 $error = "$label token save nahi ho saka.";
             }
         }
-    } else {
+    } elseif(($_POST['action'] ?? '') === 'update'){
+        $operatorName = trim($_POST['operator_name'] ?? '');
+        $aadhaarNo = trim($_POST['aadhaar_no'] ?? '');
+        $authToken = trim($_POST['auth_token'] ?? '');
+        $bioToken = trim($_POST['bio_token'] ?? '');
+        $pidData = trim($_POST['pid_data'] ?? '');
+        $otp = trim($_POST['otp'] ?? '');
+        $verifyOtp = trim($_POST['verify_otp'] ?? '');
+
+        if($operatorName === '' || strlen($operatorName) > 150){
+            $error = 'Operator Name 1 se 150 characters ka hona chahiye.';
+        } elseif($aadhaarNo !== '' && !preg_match('/^\d{12}$/', $aadhaarNo)){
+            $error = 'Naya Aadhaar No. exactly 12 digits ka hona chahiye.';
+        } elseif(strlen($authToken) > 10000 || strlen($bioToken) > 10000 || strlen($otp) > 10000 || strlen($verifyOtp) > 10000 || strlen($pidData) > 1000000){
+            $error = 'Token ya PID Data allowed size se bada hai.';
+        } else {
+            try {
+                $aadhaarEncrypted = $aadhaarNo === '' ? null : ucEncrypt($aadhaarNo);
+                $aadhaarLast4 = $aadhaarNo === '' ? null : substr($aadhaarNo, -4);
+                $authEncrypted = $authToken === '' ? null : ucEncrypt($authToken);
+                $bioEncrypted = $bioToken === '' ? null : ucEncrypt($bioToken);
+                $pidEncrypted = $pidData === '' ? null : ucEncrypt($pidData);
+                $otpEncrypted = $otp === '' ? null : ucEncrypt($otp);
+                $verifyOtpEncrypted = $verifyOtp === '' ? null : ucEncrypt($verifyOtp);
+
+                $stmt = mysqli_prepare($link, "UPDATE uc_operators SET operator_name = ?,
+                    aadhaar_encrypted = COALESCE(?, aadhaar_encrypted),
+                    aadhaar_last4 = COALESCE(?, aadhaar_last4),
+                    auth_token_encrypted = COALESCE(?, auth_token_encrypted),
+                    bio_token_encrypted = COALESCE(?, bio_token_encrypted),
+                    pid_data_encrypted = COALESCE(?, pid_data_encrypted),
+                    otp_encrypted = COALESCE(?, otp_encrypted),
+                    verify_otp_encrypted = COALESCE(?, verify_otp_encrypted)
+                    WHERE id = ?");
+                if(!$stmt){
+                    throw new RuntimeException('Update query unavailable');
+                }
+                mysqli_stmt_bind_param($stmt, 'ssssssssi', $operatorName, $aadhaarEncrypted, $aadhaarLast4,
+                    $authEncrypted, $bioEncrypted, $pidEncrypted, $otpEncrypted, $verifyOtpEncrypted, $editId);
+                if(!mysqli_stmt_execute($stmt)){
+                    throw new RuntimeException(mysqli_stmt_error($stmt));
+                }
+                mysqli_stmt_close($stmt);
+                $success = 'UC Operator update ho gaya.';
+                $_SESSION['uc_operator_csrf'] = bin2hex(random_bytes(32));
+                $_POST = [];
+                $editRow['operator_name'] = $operatorName;
+                if($aadhaarLast4 !== null){
+                    $editRow['aadhaar_last4'] = $aadhaarLast4;
+                }
+            } catch(Throwable $e){
+                $error = 'UC Operator update nahi ho saka.';
+            }
+        }
+    } elseif(($_POST['action'] ?? '') === ''){
     $operatorName = trim($_POST['operator_name'] ?? '');
     $aadhaarNo = preg_replace('/\D+/', '', $_POST['aadhaar_no'] ?? '');
     $authToken = trim($_POST['auth_token'] ?? '');
@@ -148,7 +226,7 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
-                        <strong><i class="fa fa-user-plus"></i> UC Operator Add</strong>
+                        <strong><i class="fa fa-user-plus"></i> <?= $editRow ? 'UC Operator Edit' : 'UC Operator Add' ?></strong>
                     </div>
                     <div class="card-body">
                         <?php if($success): ?>
@@ -160,21 +238,26 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
 
                         <form method="POST" action="uc_operator_add.php" autocomplete="off">
                             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['uc_operator_csrf']) ?>">
+                            <?php if($editRow): ?>
+                                <input type="hidden" name="action" value="update">
+                                <input type="hidden" name="operator_id" value="<?= (int)$editRow['id'] ?>">
+                                <p class="text-muted">Naam badlein ya Aadhaar/token/PID Data replacement dein. Khali sensitive fields unchanged rahenge; purani values yahan nahi dikhai jaati.</p>
+                            <?php endif; ?>
 
                             <div class="form-row">
                                 <div class="form-group col-md-6">
                                     <label for="operator_name"><b>Operator Name</b></label>
                                     <input id="operator_name" type="text" name="operator_name" class="form-control"
                                            maxlength="150" required
-                                           value="<?= htmlspecialchars($_POST['operator_name'] ?? '') ?>"
+                                           value="<?= htmlspecialchars($_POST['operator_name'] ?? $editRow['operator_name'] ?? '') ?>"
                                            placeholder="Operator ka naam">
                                 </div>
                                 <div class="form-group col-md-6">
                                     <label for="aadhaar_no"><b>Aadhaar No.</b></label>
                                     <input id="aadhaar_no" type="text" name="aadhaar_no" class="form-control"
-                                           inputmode="numeric" pattern="[0-9]{12}" maxlength="12" required
-                                           value="<?= htmlspecialchars($_POST['aadhaar_no'] ?? '') ?>"
-                                           placeholder="12 digit Aadhaar number">
+                                           inputmode="numeric" pattern="[0-9]{12}" maxlength="12" <?= $editRow ? '' : 'required' ?>
+                                           value="<?= $editRow ? '' : htmlspecialchars($_POST['aadhaar_no'] ?? '') ?>"
+                                           placeholder="<?= $editRow ? 'Unchanged (****' . htmlspecialchars($editRow['aadhaar_last4']) . ')' : '12 digit Aadhaar number' ?>">
                                 </div>
                             </div>
 
@@ -182,40 +265,41 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
                                 <div class="form-group col-md-6">
                                     <label for="auth_token"><b>Auth Token</b></label>
                                     <textarea id="auth_token" name="auth_token" class="form-control" rows="3"
-                                              maxlength="10000" required placeholder="Auth token paste karein"><?= htmlspecialchars($_POST['auth_token'] ?? '') ?></textarea>
+                                               maxlength="10000" <?= $editRow ? '' : 'required' ?> placeholder="<?= $editRow ? 'Unchanged — replace karne ke liye paste karein' : 'Auth token paste karein' ?>"><?= $editRow ? '' : htmlspecialchars($_POST['auth_token'] ?? '') ?></textarea>
                                 </div>
                                 <div class="form-group col-md-6">
                                     <label for="bio_token"><b>Bio Token</b></label>
                                     <textarea id="bio_token" name="bio_token" class="form-control" rows="3"
-                                              maxlength="10000" required placeholder="Bio token paste karein"><?= htmlspecialchars($_POST['bio_token'] ?? '') ?></textarea>
+                                               maxlength="10000" <?= $editRow ? '' : 'required' ?> placeholder="<?= $editRow ? 'Unchanged — replace karne ke liye paste karein' : 'Bio token paste karein' ?>"><?= $editRow ? '' : htmlspecialchars($_POST['bio_token'] ?? '') ?></textarea>
                                 </div>
                             </div>
 
                             <div class="form-group">
                                 <label for="pid_data"><b>PID Data</b></label>
                                 <textarea id="pid_data" name="pid_data" class="form-control" rows="5"
-                                          maxlength="1000000" required placeholder="PID data paste karein"><?= htmlspecialchars($_POST['pid_data'] ?? '') ?></textarea>
+                                           maxlength="1000000" <?= $editRow ? '' : 'required' ?> placeholder="<?= $editRow ? 'Unchanged — replace karne ke liye paste karein' : 'PID data paste karein' ?>"><?= $editRow ? '' : htmlspecialchars($_POST['pid_data'] ?? '') ?></textarea>
                             </div>
 
                             <div class="form-row">
                                 <div class="form-group col-md-6">
                                     <label for="otp"><b>verify-otp-uc Token</b></label>
                                     <textarea id="otp" name="otp" class="form-control" rows="3"
-                                              maxlength="10000" required placeholder="Auth token ki tarah text paste karein"><?= htmlspecialchars($_POST['otp'] ?? '') ?></textarea>
+                                               maxlength="10000" <?= $editRow ? '' : 'required' ?> placeholder="<?= $editRow ? 'Unchanged — replace karne ke liye paste karein' : 'Auth token ki tarah text paste karein' ?>"><?= $editRow ? '' : htmlspecialchars($_POST['otp'] ?? '') ?></textarea>
                                 </div>
                                 <div class="form-group col-md-6">
                                     <label for="verify_otp"><b>verify-otp Token</b></label>
                                     <textarea id="verify_otp" name="verify_otp" class="form-control" rows="3"
-                                              maxlength="10000" required placeholder="Auth token ki tarah text paste karein"><?= htmlspecialchars($_POST['verify_otp'] ?? '') ?></textarea>
+                                               maxlength="10000" <?= $editRow ? '' : 'required' ?> placeholder="<?= $editRow ? 'Unchanged — replace karne ke liye paste karein' : 'Auth token ki tarah text paste karein' ?>"><?= $editRow ? '' : htmlspecialchars($_POST['verify_otp'] ?? '') ?></textarea>
                                 </div>
                             </div>
 
                             <div class="alert alert-info py-2">
-                                Aadhaar, tokens aur PID Data encrypted form mein save honge.
+                                Aadhaar, tokens aur PID Data encrypted form mein save honge. <?= $editRow ? 'Khali fields ki saved values unchanged rahengi.' : '' ?>
                             </div>
                             <button type="submit" class="btn btn-success">
-                                <i class="fa fa-save"></i> UC Operator Add Karo
+                                <i class="fa fa-save"></i> <?= $editRow ? 'Changes Save Karo' : 'UC Operator Add Karo' ?>
                             </button>
+                            <?php if($editRow): ?><a href="uc_operator_add.php" class="btn btn-secondary ml-2">Cancel</a><?php endif; ?>
                         </form>
                     </div>
                 </div>
@@ -238,6 +322,7 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
                                         <th>verify-otp Token</th>
                                         <th>verify-otp-uc Token</th>
                                         <th>Added On</th>
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -272,10 +357,11 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
                                                 </form>
                                             </td>
                                             <td><?= htmlspecialchars($row['created_at']) ?></td>
+                                            <td><a class="btn btn-warning btn-sm" href="uc_operator_add.php?edit=<?= (int)$row['id'] ?>"><i class="fa fa-edit"></i> Edit</a></td>
                                         </tr>
                                     <?php endwhile; ?>
                                 <?php else: ?>
-                                    <tr><td colspan="7" class="text-center text-muted">Abhi koi UC Operator add nahi hua.</td></tr>
+                                    <tr><td colspan="8" class="text-center text-muted">Abhi koi UC Operator add nahi hua.</td></tr>
                                 <?php endif; ?>
                                 </tbody>
                             </table>
