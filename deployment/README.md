@@ -111,6 +111,10 @@ http://103.118.17.117:7070/api/v1/upload-uc-count
 other path on port 7070 returns `404`, so application pages and release files
 are not exposed by the API listener.
 
+On success, `get-pid` returns only the decrypted PID data as plain text (not a
+JSON object). Authentication, missing mapping, and other errors still return
+JSON error responses.
+
 Before deploying verify-otp support on an existing database, apply
 `deployment/migrations/002_verify_otp.sql` to the application database and add
 `verify-otp` to both port 80 and port 7070 Nginx API route allowlists. Existing

@@ -143,7 +143,7 @@ try {
         [$responseKey, $databaseKey] = $fieldMap[$route];
         $value = ucDecrypt($operator[$databaseKey]);
 
-        if(in_array($route, ['get-auth-token', 'get-bio-token'], true)){
+        if(in_array($route, ['get-auth-token', 'get-bio-token', 'get-pid'], true)){
             header('Content-Type: text/plain; charset=utf-8');
             http_response_code(200);
             echo $value;
