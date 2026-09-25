@@ -12,6 +12,18 @@ if(!isset($_SESSION['user_type']) || $_SESSION['user_type'] !== 'admin'){
     exit('Access denied');
 }
 
+header('Cache-Control: no-store, no-cache, must-revalidate, private');
+
+function ucSavedValueControl($field, $operatorId, $label, $rows = 3){
+    $label = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
+    $field = htmlspecialchars($field, ENT_QUOTES, 'UTF-8');
+    return '<div class="uc-saved-value mt-2" data-field="' . $field . '" data-operator-id="' . (int)$operatorId . '">'
+        . '<button type="button" class="btn btn-outline-secondary btn-sm uc-reveal">Purani value dekhein</button>'
+        . '<textarea class="form-control mt-2 uc-saved-text" rows="' . (int)$rows . '" readonly hidden aria-label="Saved ' . $label . '"></textarea>'
+        . '<small class="text-danger uc-reveal-error" hidden></small>'
+        . '</div>';
+}
+
 $success = '';
 $error = '';
 
@@ -220,6 +232,7 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
 }
 ?>
 
+<style>.uc-saved-value [hidden] { display: none !important; }</style>
 <div class="content" style="min-height:610px;">
     <div class="animated fadeIn">
         <div class="row">
@@ -241,7 +254,7 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
                             <?php if($editRow): ?>
                                 <input type="hidden" name="action" value="update">
                                 <input type="hidden" name="operator_id" value="<?= (int)$editRow['id'] ?>">
-                                <p class="text-muted">Naam badlein ya Aadhaar/token/PID Data replacement dein. Khali sensitive fields unchanged rahenge; purani values yahan nahi dikhai jaati.</p>
+                                 <p class="text-muted">Purani value dekhne ke liye har field ka button dabayein. Replacement field khali chhodne par saved value unchanged rahegi.</p>
                             <?php endif; ?>
 
                             <div class="form-row">
@@ -258,6 +271,7 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
                                            inputmode="numeric" pattern="[0-9]{12}" maxlength="12" <?= $editRow ? '' : 'required' ?>
                                            value="<?= $editRow ? '' : htmlspecialchars($_POST['aadhaar_no'] ?? '') ?>"
                                            placeholder="<?= $editRow ? 'Unchanged (****' . htmlspecialchars($editRow['aadhaar_last4']) . ')' : '12 digit Aadhaar number' ?>">
+                                     <?php if($editRow): echo ucSavedValueControl('aadhaar_no', $editRow['id'], 'Aadhaar No.', 1); endif; ?>
                                 </div>
                             </div>
 
@@ -266,11 +280,13 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
                                     <label for="auth_token"><b>Auth Token</b></label>
                                     <textarea id="auth_token" name="auth_token" class="form-control" rows="3"
                                                maxlength="10000" <?= $editRow ? '' : 'required' ?> placeholder="<?= $editRow ? 'Unchanged — replace karne ke liye paste karein' : 'Auth token paste karein' ?>"><?= $editRow ? '' : htmlspecialchars($_POST['auth_token'] ?? '') ?></textarea>
+                                     <?php if($editRow): echo ucSavedValueControl('auth_token', $editRow['id'], 'Auth Token'); endif; ?>
                                 </div>
                                 <div class="form-group col-md-6">
                                     <label for="bio_token"><b>Bio Token</b></label>
                                     <textarea id="bio_token" name="bio_token" class="form-control" rows="3"
                                                maxlength="10000" <?= $editRow ? '' : 'required' ?> placeholder="<?= $editRow ? 'Unchanged — replace karne ke liye paste karein' : 'Bio token paste karein' ?>"><?= $editRow ? '' : htmlspecialchars($_POST['bio_token'] ?? '') ?></textarea>
+                                     <?php if($editRow): echo ucSavedValueControl('bio_token', $editRow['id'], 'Bio Token'); endif; ?>
                                 </div>
                             </div>
 
@@ -278,6 +294,7 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
                                 <label for="pid_data"><b>PID Data</b></label>
                                 <textarea id="pid_data" name="pid_data" class="form-control" rows="5"
                                            maxlength="1000000" <?= $editRow ? '' : 'required' ?> placeholder="<?= $editRow ? 'Unchanged — replace karne ke liye paste karein' : 'PID data paste karein' ?>"><?= $editRow ? '' : htmlspecialchars($_POST['pid_data'] ?? '') ?></textarea>
+                             <?php if($editRow): echo ucSavedValueControl('pid_data', $editRow['id'], 'PID Data', 5); endif; ?>
                             </div>
 
                             <div class="form-row">
@@ -285,11 +302,13 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
                                     <label for="otp"><b>verify-otp-uc Token</b></label>
                                     <textarea id="otp" name="otp" class="form-control" rows="3"
                                                maxlength="10000" <?= $editRow ? '' : 'required' ?> placeholder="<?= $editRow ? 'Unchanged — replace karne ke liye paste karein' : 'Auth token ki tarah text paste karein' ?>"><?= $editRow ? '' : htmlspecialchars($_POST['otp'] ?? '') ?></textarea>
+                                     <?php if($editRow): echo ucSavedValueControl('otp', $editRow['id'], 'verify-otp-uc Token'); endif; ?>
                                 </div>
                                 <div class="form-group col-md-6">
                                     <label for="verify_otp"><b>verify-otp Token</b></label>
                                     <textarea id="verify_otp" name="verify_otp" class="form-control" rows="3"
                                                maxlength="10000" <?= $editRow ? '' : 'required' ?> placeholder="<?= $editRow ? 'Unchanged — replace karne ke liye paste karein' : 'Auth token ki tarah text paste karein' ?>"><?= $editRow ? '' : htmlspecialchars($_POST['verify_otp'] ?? '') ?></textarea>
+                                     <?php if($editRow): echo ucSavedValueControl('verify_otp', $editRow['id'], 'verify-otp Token'); endif; ?>
                                 </div>
                             </div>
 
@@ -344,6 +363,7 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
                                                               placeholder="<?= $row['has_verify_otp'] ? 'Replace token' : 'Paste token' ?>"></textarea>
                                                     <button type="submit" class="btn btn-sm btn-primary mb-1"><?= $row['has_verify_otp'] ? 'Update' : 'Save' ?></button>
                                                 </form>
+                                                 <?= ucSavedValueControl('verify_otp', $row['id'], 'verify-otp Token', 2) ?>
                                             </td>
                                             <td>
                                                 <form method="POST" action="uc_operator_add.php" autocomplete="off" class="form-inline">
@@ -355,6 +375,7 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
                                                               rows="2" maxlength="10000" required placeholder="Replace token"></textarea>
                                                     <button type="submit" class="btn btn-sm btn-primary mb-1">Update</button>
                                                 </form>
+                                                 <?= ucSavedValueControl('otp', $row['id'], 'verify-otp-uc Token', 2) ?>
                                             </td>
                                             <td><?= htmlspecialchars($row['created_at']) ?></td>
                                             <td><a class="btn btn-warning btn-sm" href="uc_operator_add.php?edit=<?= (int)$row['id'] ?>"><i class="fa fa-edit"></i> Edit</a></td>
@@ -374,3 +395,46 @@ if($error === '' || mysqli_query($link, "SHOW TABLES LIKE 'uc_operators'")){
 </div>
 
 <?php include('layout/footer.php'); ?>
+<script>
+document.addEventListener('click', async function (event) {
+    const button = event.target.closest('.uc-reveal');
+    if (!button) return;
+    const container = button.closest('.uc-saved-value');
+    const saved = container.querySelector('.uc-saved-text');
+    const error = container.querySelector('.uc-reveal-error');
+    if (!saved.hidden) {
+        saved.value = '';
+        saved.hidden = true;
+        button.textContent = 'Purani value dekhein';
+        return;
+    }
+    error.hidden = true;
+    button.disabled = true;
+    button.textContent = 'Loading...';
+    try {
+        const body = new URLSearchParams({
+            csrf_token: document.querySelector('input[name="csrf_token"]').value,
+            operator_id: container.dataset.operatorId,
+            field: container.dataset.field
+        });
+        const response = await fetch('uc_operator_value.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString()
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Saved value read nahi ho saki.');
+        saved.value = data.value;
+        saved.hidden = false;
+        button.textContent = 'Purani value chhupayein';
+    } catch (e) {
+        error.textContent = e.message;
+        error.hidden = false;
+        button.textContent = 'Purani value dekhein';
+    } finally {
+        button.disabled = false;
+    }
+});
+</script>
