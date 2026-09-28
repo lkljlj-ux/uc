@@ -5,13 +5,17 @@ set -euo pipefail
 : "${RELEASE_SOURCE:?RELEASE_SOURCE is required}"
 : "${APP_URL:?APP_URL is required}"
 
-if [[ "$APP_URL" != https://* ]]; then
-  echo "APP_URL must be an HTTPS origin for device API verification." >&2
+if [[ "$APP_URL" == http://* ]]; then
+  https_url="https://${APP_URL#http://}"
+elif [[ "$APP_URL" == https://* ]]; then
+  https_url="$APP_URL"
+else
+  echo "::error::APP_URL must be an HTTP or HTTPS origin." >&2
   exit 1
 fi
 for required in api/v1/.uc_device_auth_ready api/v1/uc_api.php uc_device_access.php deployment/migrations/004_uc_device_access.sql; do
   if [[ ! -f "$RELEASE_SOURCE/$required" ]]; then
-    echo "Incomplete secured UC release: missing $required." >&2
+    echo "::error::Incomplete secured UC release: missing $required." >&2
     exit 1
   fi
 done
@@ -42,9 +46,9 @@ ln -sfn "$release_dir" "$APP_ROOT/current"
 # No device credentials are used by this probe: a secure endpoint must reject it.
 device_status=""
 if ! systemctl reload php8.3-fpm ||
-   ! curl --fail --silent --show-error --max-time 20 "$APP_URL/health.php" >/dev/null ||
+   ! curl --fail --silent --show-error --max-time 20 "$https_url/health.php" >/dev/null ||
    ! device_status="$(curl --silent --show-error --max-time 20 -o /dev/null -w '%{http_code}' \
-     "$APP_URL/api/v1/get-pid?macId=DEPLOY-UNAUTHENTICATED-PROBE")" ||
+     "$https_url/api/v1/get-pid?macId=DEPLOY-UNAUTHENTICATED-PROBE")" ||
    [[ "$device_status" != 401 ]]; then
   if [[ -n "$previous_release" && -d "$previous_release" ]]; then
     ln -sfn "$previous_release" "$APP_ROOT/current"
@@ -52,7 +56,7 @@ if ! systemctl reload php8.3-fpm ||
   else
     rm -f "$APP_ROOT/current"
   fi
-  echo "Release verification failed (health or unauthenticated UC API); previous release restored if available." >&2
+  echo "::error::Release verification failed (health or unauthenticated UC API, status $device_status); previous release restored if available." >&2
   exit 1
 fi
 

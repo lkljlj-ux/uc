@@ -184,7 +184,8 @@ use the documented `/api/v1/get-pid`-style aliases.
 Before the next GitHub deployment, confirm migration 004 has been applied to
 the VPS database and the HTTPS Nginx configuration above is active. The
 deployment script requires the marker, secured API, admin page and migration
-file in the release source, and requires an HTTPS `APP_URL`. After switching
+file in the release source. It upgrades a legacy HTTP `APP_URL` to HTTPS for
+verification (the host must serve HTTPS on the standard port). After switching
 releases it checks `/health.php` and expects HTTP 401 from a tokenless
 `/api/v1/get-pid` request with a test MAC ID. This check sends no credential
 and returns no PID. A failed check restores the previous release and reloads

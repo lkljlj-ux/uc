@@ -21,6 +21,7 @@ printf '%s\n' "$*" >> "$RELOAD_LOG"
 SH
 cat >"$tmp/bin/curl" <<'SH'
 #!/usr/bin/env bash
+[[ "$*" != *http://* ]] || exit 1
 if [[ "$*" == *health.php* ]]; then
   [[ "${HEALTH_OK:-1}" == 1 ]]
 else
@@ -29,7 +30,7 @@ fi
 SH
 chmod +x "$tmp/bin/"*
 export PATH="$tmp/bin:$PATH" RELOAD_LOG="$tmp/reloads"
-export APP_ROOT="$app_root" RELEASE_SOURCE="$source_dir" APP_URL="https://example.invalid"
+export APP_ROOT="$app_root" RELEASE_SOURCE="$source_dir" APP_URL="http://example.invalid"
 
 if bash deployment/deploy.sh >"$tmp/output" 2>&1; then
   echo "Missing marker was accepted" >&2
