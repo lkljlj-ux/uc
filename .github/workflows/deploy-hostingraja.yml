@@ -16,6 +16,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate PHP syntax
         run: find . -type f -name '*.php' -not -path './.git/*' -print0 | xargs -0 -n1 php -l
+      - name: Rehearse secured device deployment and rollback
+        run: bash deployment/tests/deploy_device_guard.sh
 
   deploy:
     needs: validate
