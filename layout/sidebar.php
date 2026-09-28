@@ -41,6 +41,9 @@
                                                 <li class=" <?php if($page=='uc_map.php'){ echo 'active';} ?>">
                                                         <a href="uc_map.php"><i class="menu-icon fa fa-sitemap"></i> UC Map Machine</a>
                                                 </li>
+                                                 <li class=" <?php if($page=='uc_device_access.php'){ echo 'active';} ?>">
+                                                         <a href="uc_device_access.php"><i class="menu-icon fa fa-lock"></i> UC Device Access</a>
+                                                 </li>
                                                  <li class=" <?php if($page=='uc_report.php'){ echo 'active';} ?>">
                                                          <a href="uc_report.php"><i class="menu-icon fa fa-bar-chart"></i> UC Report</a>
                                                  </li>

@@ -3,9 +3,8 @@ require_once __DIR__ . '/../../database.php';
 require_once __DIR__ . '/../../includes/uc_security.php';
 
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: Origin, Content-Type, X-Auth-Token');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Cache-Control: no-store, private');
+header('X-Content-Type-Options: nosniff');
 
 if($_SERVER['REQUEST_METHOD'] === 'OPTIONS'){
     http_response_code(204);
@@ -23,22 +22,47 @@ function ucApiHeader($name){
     return $_SERVER[$serverKey] ?? '';
 }
 
-function ucApiAuthorize(){
-    $requireAuthValue = getenv('UC_API_REQUIRE_AUTH');
-    $requireAuth = strtolower((string)($requireAuthValue === false ? '1' : $requireAuthValue));
-    if(in_array($requireAuth, ['0', 'false', 'no', 'off'], true)){
-        return;
+function ucApiIsHttps(){
+    return ($_SERVER['HTTPS'] ?? '') === 'on';
+}
+
+function ucApiSecurityMode(){
+    // Transition must be explicitly configured on an installation with old clients.
+    return getenv('UC_API_SECURITY_MODE') === 'transition' ? 'transition' : 'enforce';
+}
+
+function ucApiAuthorize($link, $macId){
+    if(!ucApiIsHttps()){
+        if(ucApiSecurityMode() !== 'transition'){
+            ucApiResponse(426, ['status' => false, 'message' => 'HTTPS required']);
+        }
+        // Legacy HTTP is temporary, but never allow its old unauthenticated bypass.
+        $expected = getenv('UC_API_KEY');
+        if(!$expected){
+            // Existing installations may still use this key until all HTTP clients migrate.
+            $expected = getenv('SESSION_SECRET');
+        }
+        $received = ucApiHeader('X-Auth-Token');
+        if(!$expected || $received === '' || !hash_equals($expected, $received)){
+            ucApiResponse(401, ['status' => false, 'message' => 'Unauthorized']);
+        }
+        return false;
     }
 
-    $expected = getenv('UC_API_KEY');
-    if($expected === false || $expected === ''){
-        // Backward compatibility for existing installations.
-        $expected = getenv('SESSION_SECRET');
-    }
     $received = ucApiHeader('X-Auth-Token');
-    if($expected === false || $expected === '' || $received === '' || !hash_equals($expected, $received)){
+    if(!is_string($received) || !preg_match('/^[a-f0-9]{64}$/D', $received)){
         ucApiResponse(401, ['status' => false, 'message' => 'Unauthorized']);
     }
+    $hash = hash('sha256', $received);
+    $stmt = mysqli_prepare($link, "SELECT macid FROM uc_device_tokens WHERE token_hash = ? AND revoked_at IS NULL LIMIT 1");
+    mysqli_stmt_bind_param($stmt, 's', $hash);
+    mysqli_stmt_execute($stmt);
+    $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+    mysqli_stmt_close($stmt);
+    if(!$row || !hash_equals($row['macid'], $macId)){
+        ucApiResponse(401, ['status' => false, 'message' => 'Unauthorized']);
+    }
+    return true;
 }
 
 function ucApiRoute(){
@@ -72,52 +96,112 @@ function ucApiMappedOperator($link, $macId){
     return $row;
 }
 
+function ucApiUploadCount($link, $macId, $secure){
+    if($_SERVER['REQUEST_METHOD'] !== 'POST'){
+        header('Allow: POST, OPTIONS');
+        ucApiResponse(405, ['status' => false, 'message' => 'POST required hai']);
+    }
+
+    if($secure){
+        if(isset($_GET['sid'])){
+            ucApiResponse(422, ['status' => false, 'message' => 'sid URL mein nahi, JSON body mein bhejein']);
+        }
+        $body = file_get_contents('php://input', false, null, 0, 4097);
+        if($body === false || strlen($body) > 4096){
+            ucApiResponse(413, ['status' => false, 'message' => 'Request too large']);
+        }
+        $data = json_decode($body, true);
+        if(!is_array($data)){
+            ucApiResponse(422, ['status' => false, 'message' => 'JSON body required hai']);
+        }
+        $sid = $data['sid'] ?? null;
+        $eventId = $data['eventId'] ?? null;
+        if(!is_string($eventId) || !preg_match('/^[A-Za-z0-9_-]{8,128}$/D', $eventId)){
+            ucApiResponse(422, ['status' => false, 'message' => 'Valid eventId required hai']);
+        }
+    } else {
+        $sid = $_GET['sid'] ?? $_POST['sid'] ?? null;
+    }
+    if(!is_string($sid) || trim($sid) === '' || strlen($sid) > 255){
+        ucApiResponse(422, ['status' => false, 'message' => 'sid required hai (max 255 characters)']);
+    }
+    $sid = trim($sid);
+
+    if($secure){
+        mysqli_begin_transaction($link);
+        try {
+            $stmt = mysqli_prepare($link, "INSERT INTO uc_upload_events (macid, event_id, sid) VALUES (?, ?, ?)
+                ON DUPLICATE KEY UPDATE event_id = event_id");
+            mysqli_stmt_bind_param($stmt, 'sss', $macId, $eventId, $sid);
+            mysqli_stmt_execute($stmt);
+            $isNew = mysqli_stmt_affected_rows($stmt) === 1;
+            mysqli_stmt_close($stmt);
+
+            if(!$isNew){
+                $stmt = mysqli_prepare($link, "SELECT sid FROM uc_upload_events WHERE macid = ? AND event_id = ?");
+                mysqli_stmt_bind_param($stmt, 'ss', $macId, $eventId);
+                mysqli_stmt_execute($stmt);
+                $previous = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+                mysqli_stmt_close($stmt);
+                if(!$previous || !hash_equals($previous['sid'], $sid)){
+                    mysqli_rollback($link);
+                    ucApiResponse(409, ['status' => false, 'message' => 'eventId pehle alag sid ke liye use hua hai']);
+                }
+            }
+
+            if($isNew){
+                $stmt = mysqli_prepare($link, "INSERT INTO uc_upload_counts (macid, sid, upload_count)
+                    VALUES (?, ?, 1) ON DUPLICATE KEY UPDATE upload_count = upload_count + 1");
+                mysqli_stmt_bind_param($stmt, 'ss', $macId, $sid);
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
+            }
+            mysqli_commit($link);
+        } catch(Throwable $e){
+            mysqli_rollback($link);
+            throw $e;
+        }
+    } else {
+        $stmt = mysqli_prepare($link, "INSERT INTO uc_upload_counts (macid, sid, upload_count)
+            VALUES (?, ?, 1) ON DUPLICATE KEY UPDATE upload_count = upload_count + 1");
+        mysqli_stmt_bind_param($stmt, 'ss', $macId, $sid);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+        $isNew = true;
+    }
+
+    $stmt = mysqli_prepare($link, "SELECT upload_count FROM uc_upload_counts WHERE macid = ? AND sid = ?");
+    mysqli_stmt_bind_param($stmt, 'ss', $macId, $sid);
+    mysqli_stmt_execute($stmt);
+    $count = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+    mysqli_stmt_close($stmt);
+
+    $response = ['status' => true, 'macId' => $macId, 'count' => (int)$count['upload_count'], 'counted' => $isNew];
+    if(!$secure){
+        $response['sid'] = $sid;
+    }
+    ucApiResponse(200, $response);
+}
+
 try {
     $route = ucApiRoute();
 
-    // Public status checks are used by mapped devices before they can attach
-    // the private API token. All data-bearing UC endpoints stay protected.
-    if($route !== 'getStatusUc'){
-        ucApiAuthorize();
+    $rawMacId = $_GET['macId'] ?? $_POST['macId'] ?? '';
+    if(!is_string($rawMacId)){
+        ucApiResponse(422, ['status' => false, 'message' => 'macId invalid hai']);
     }
-
-    $macId = ucNormalizeMac($_GET['macId'] ?? $_POST['macId'] ?? '');
-    if($macId === ''){
-        ucApiResponse(422, ['status' => false, 'message' => 'macId required hai']);
+    $macId = ucNormalizeMac($rawMacId);
+    if($macId === '' || strlen($macId) > 100){
+        ucApiResponse(422, ['status' => false, 'message' => 'macId required hai (max 100 characters)']);
+    }
+    // Status is intentionally public and contains only ACTIVE/INACTIVE.
+    $secure = false;
+    if($route !== 'getStatusUc'){
+        $secure = ucApiAuthorize($link, $macId);
     }
 
     if($route === 'upload-uc-count'){
-        if($_SERVER['REQUEST_METHOD'] !== 'POST'){
-            header('Allow: POST, OPTIONS');
-            ucApiResponse(405, ['status' => false, 'message' => 'POST required hai']);
-        }
-
-        if(strlen($macId) > 100){
-            ucApiResponse(422, ['status' => false, 'message' => 'macId max 100 characters hona chahiye']);
-        }
-        $sid = $_GET['sid'] ?? $_POST['sid'] ?? '';
-        if(!is_string($sid) || trim($sid) === '' || strlen($sid) > 255){
-            ucApiResponse(422, ['status' => false, 'message' => 'sid required hai (max 255 characters)']);
-        }
-        $sid = trim($sid);
-
-        $stmt = mysqli_prepare($link, "INSERT INTO uc_upload_counts (macid, sid, upload_count)
-            VALUES (?, ?, 1)
-            ON DUPLICATE KEY UPDATE upload_count = upload_count + 1");
-        if(!$stmt){
-            throw new RuntimeException('UC upload count query unavailable');
-        }
-        mysqli_stmt_bind_param($stmt, 'ss', $macId, $sid);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_close($stmt);
-
-        $stmt = mysqli_prepare($link, "SELECT upload_count FROM uc_upload_counts WHERE macid = ? AND sid = ?");
-        mysqli_stmt_bind_param($stmt, 'ss', $macId, $sid);
-        mysqli_stmt_execute($stmt);
-        $count = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
-        mysqli_stmt_close($stmt);
-
-        ucApiResponse(200, ['status' => true, 'macId' => $macId, 'sid' => $sid, 'count' => (int)$count['upload_count']]);
+        ucApiUploadCount($link, $macId, $secure);
     }
 
     $operator = ucApiMappedOperator($link, $macId);
@@ -134,27 +218,17 @@ try {
     }
 
     $fieldMap = [
-        'get-auth-token' => ['authToken', 'auth_token_encrypted'],
-        'get-bio-token' => ['bioToken', 'bio_token_encrypted'],
-        'get-pid' => ['pidData', 'pid_data_encrypted']
+        'get-auth-token' => 'auth_token_encrypted',
+        'get-bio-token' => 'bio_token_encrypted',
+        'get-pid' => 'pid_data_encrypted'
     ];
 
     if(isset($fieldMap[$route])){
-        [$responseKey, $databaseKey] = $fieldMap[$route];
-        $value = ucDecrypt($operator[$databaseKey]);
-
-        if(in_array($route, ['get-auth-token', 'get-bio-token', 'get-pid'], true)){
-            header('Content-Type: text/plain; charset=utf-8');
-            http_response_code(200);
-            echo $value;
-            exit();
-        }
-
-        ucApiResponse(200, [
-            'status' => true,
-            'macId' => $operator['macid'],
-            $responseKey => $value
-        ]);
+        $value = ucDecrypt($operator[$fieldMap[$route]]);
+        header('Content-Type: text/plain; charset=utf-8');
+        http_response_code(200);
+        echo $value;
+        exit();
     }
 
     if($route === 'verify-otp'){

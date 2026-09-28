@@ -23,8 +23,21 @@ fi
 
 install -d -o "$DEPLOY_USER" -g www-data -m 2775 \
   "$APP_ROOT/releases" "$APP_ROOT/shared/collections" "$APP_ROOT/shared/downloads"
+install -d -m 0755 "$APP_ROOT/shared/acme-webroot/.well-known/acme-challenge"
+
+if [[ -r /etc/letsencrypt/live/103.118.17.117/fullchain.pem ]]; then
+  web_rule='return 308 https://103.118.17.117$request_uri;'
+  php_rule='return 308 https://103.118.17.117$request_uri;'
+else
+  # Initial bootstrap must still serve ACME validation before HTTPS exists.
+  # Do not issue device tokens or use admin accounts until TLS is installed.
+  web_rule='try_files $uri $uri/ /index.php?$query_string;'
+  php_rule=$'include fastcgi_params;\n        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;\n        fastcgi_pass unix:/run/php/php'"${PHP_VERSION}"$'-fpm.sock;'
+fi
 
 cat >/etc/nginx/sites-available/myjoin <<EOF
+log_format myjoin_http_safe '\$remote_addr [\$time_local] "\$request_method \$uri" \$status \$body_bytes_sent';
+
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
@@ -33,9 +46,22 @@ server {
     root ${APP_ROOT}/current;
     index index.php index.html;
     client_max_body_size 100M;
+    access_log /var/log/nginx/myjoin_http_access.log myjoin_http_safe;
+
+    location ^~ /.well-known/acme-challenge/ {
+        root ${APP_ROOT}/shared/acme-webroot;
+        default_type text/plain;
+        try_files \$uri =404;
+    }
+
+    location = /health.php {
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME \$document_root/health.php;
+        fastcgi_pass unix:/run/php/php${PHP_VERSION}-fpm.sock;
+    }
 
     location / {
-        try_files \$uri \$uri/ /index.php?\$query_string;
+        ${web_rule}
     }
 
     location ~ ^/api/v1/(get-auth-token|get-bio-token|get-pid|getStatusUc|verify-otp|verify-otp-uc|upload-uc-count)/?\$ {
@@ -46,9 +72,7 @@ server {
     }
 
     location ~ \.php\$ {
-        include fastcgi_params;
-        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
-        fastcgi_pass unix:/run/php/php${PHP_VERSION}-fpm.sock;
+        ${php_rule}
     }
 
     location ~ /\. {
@@ -66,6 +90,7 @@ server {
     server_name _;
 
     root ${APP_ROOT}/current;
+    access_log /var/log/nginx/myjoin_legacy_api_access.log myjoin_http_safe;
 
     location = /health.php {
         include fastcgi_params;
@@ -93,5 +118,4 @@ systemctl enable --now "php${PHP_VERSION}-fpm" nginx mariadb
 systemctl reload nginx
 
 echo "Nginx is serving the web application on port 80 and its API on port 7070."
-echo "After adding a domain, replace server_name _ and run:"
-echo "certbot --nginx -d app.example.com"
+echo "For direct IP HTTPS, use Certbot's shortlived IP certificate and deployment/nginx-https-ip.conf."
